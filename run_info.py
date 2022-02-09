@@ -2,6 +2,7 @@ from tiled.client import from_profile
 from os import path
 from databroker.queries import TimeRange
 from analysis_classes import RawData, CalibrationInfo
+import datetime
 
 db = from_profile("ucal")
 
@@ -17,6 +18,13 @@ def get_logname(run):
     filebase = path.dirname(get_filename(run))
     filename = f"{state}{num:0=4d}.json"
     return path.join(filebase, "logs", filename)
+
+
+def get_save_directory(run):
+    basename = "/nsls2/data/sst1/legacy/ucal/raw"
+    timestamp = run.metadata['start']['timestamp']
+    date = datetime.datetime.fromtimestamp(timestamp)
+    return path.join(basename, f"{date.year}/{date.month:02d}/{date.day:02d}")
 
 
 def get_cal_state(cal_run):
@@ -38,7 +46,8 @@ def getAnalysisObjects(run):
     cal = get_cal(run)
     cal_state = get_cal_state(cal)
     line_names = get_line_names(cal)
-    rd = RawData(off_filename)
+    savedir = get_save_directory(run)
+    rd = RawData(off_filename, savedir=savedir)
     calinfo = CalibrationInfo(cal_state, line_names)
     return rd, calinfo
 
