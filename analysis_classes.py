@@ -1,14 +1,15 @@
+import numpy as np
+from os import path
 import mass
 import mass.off
 from mass.off import getOffFileListFromOneFile as getOffList
 
 
 class RawData:
-    def __init__(self, off_filename, savedir=None):
+    def __init__(self, off_filename):
         self.off_filename = off_filename
         self.calibrated = False
         self.attribute = "filtValueDC"
-        self.savedir = savedir
         self.load_data()
         self.load_ds()
 

@@ -60,6 +60,27 @@ def process(rd, calinfo):
     drift_correct(rd)
     calibrate(rd, calinfo)
 
+
+def save_tes_arrays(rd, savedir, state):
+    timestamps = []
+    energies = []
+    channels = []
+    for ds in rd.data.values():
+        uns, es = ds.getAttr(["unixnano", "energy"], state)
+        ch = np.zeros_like(uns) + ds.channum
+        timestamps.append(uns)
+        energies.append(es)
+        channels.append(ch)
+    ts_arr = np.concatenate(timestamps)
+    en_arr = np.concatenate(energies)
+    ch_arr = np.concatenate(channels)
+    sort_idx = np.argsort(ts_arr)
+    savefile = os.path.join(savedir, f"tes_{state}")
+    np.savez(savefile,
+             timestamps=ts_arr[sort_idx],
+             energies=en_arr[sort_idx],
+             channels=ch_arr[sort_idx])
+
 ############################################################
 # Plotting stuff                                           #
 ############################################################
