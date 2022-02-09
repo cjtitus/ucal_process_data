@@ -28,7 +28,7 @@ def get_logname(run):
 
 def get_save_directory(run):
     basename = "/nsls2/data/sst1/legacy/ucal/raw"
-    timestamp = run.metadata['start']['timestamp']
+    timestamp = run.metadata['start']['time']
     date = datetime.datetime.fromtimestamp(timestamp)
     return path.join(basename, f"{date.year}/{date.month:02d}/{date.day:02d}")
 
@@ -55,6 +55,7 @@ def get_cal(run):
 def getRunFromStop(doc):
     run_uuid = doc['run_start']
     run = db[run_uuid]
+    return run
 
 tes_runs = db.search(TimeRange(since="2022-01-26", until="2022-01-28"))
 sample_runs = tes_runs.search({"sample_args": {"$exists": True}})

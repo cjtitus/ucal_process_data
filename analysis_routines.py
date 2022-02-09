@@ -62,6 +62,8 @@ def process(rd, calinfo):
 
 
 def save_tes_arrays(rd, savedir, state):
+    if not os.path.exists(savedir):
+        os.makedirs(savedir)
     timestamps = []
     energies = []
     channels = []
