@@ -21,6 +21,8 @@ class RawData:
     def load_ds(self):
         self.ds = self.data.firstGoodChannel()
 
+    def refresh(self):
+        self.data.refreshFromFiles()
 
 class CalibrationInfo:
     def __init__(self, cal_state, line_names):
