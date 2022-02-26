@@ -12,9 +12,8 @@ def get_config_dict(run):
 
 
 def get_filename(run):
-    basename = "/nsls2/users/ctitus/data"
     filename = get_config_dict(run)['tes_filename']
-    return path.join(basename, *filename.split("/")[-3:])
+    return filename
 
 
 def get_logname(run):
@@ -27,7 +26,7 @@ def get_logname(run):
 
 
 def get_save_directory(run):
-    basename = "/nsls2/data/sst1/legacy/ucal/raw"
+    basename = "/nsls2/data/sst1/legacy/ucal/processed"
     timestamp = run.metadata['start']['time']
     date = datetime.datetime.fromtimestamp(timestamp)
     return path.join(basename, f"{date.year}/{date.month:02d}/{date.day:02d}")
@@ -56,6 +55,10 @@ def getRunFromStop(doc):
     run_uuid = doc['run_start']
     run = db[run_uuid]
     return run
+
+
+def get_samplename(run):
+    return run.start['sample_args']['sample_name']['value']
 
 tes_runs = db.search(TimeRange(since="2022-01-26", until="2022-01-28"))
 sample_runs = tes_runs.search({"sample_args": {"$exists": True}})

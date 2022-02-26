@@ -17,7 +17,7 @@ def ds_learnCalibrationPlanFromEnergiesAndPeaks(self, attr, states, ph_fwhm, lin
 
 mass.off.Channel.learnCalibrationPlanFromEnergiesAndPeaks = ds_learnCalibrationPlanFromEnergiesAndPeaks
 
-
+# Understand how to intelligently re-drift-correct as data comes in
 def _drift_correct(data):
     data.learnDriftCorrection()
 
@@ -26,10 +26,14 @@ def drift_correct(rd):
     """
     rd : A RawData object
     """
-    _drift_correct(rd.data)
-    rd.load_ds()
-
-
+    if not rd.driftCorrected:
+        print("Drift Correcting")
+        _drift_correct(rd.data)
+        rd.load_ds()
+        rd.driftCorrected = True
+    else:
+        print("Drift Correction already done")
+        
 def _calibrate(data, ds, cal_state, line_names, fv="filtValueDC"):
     data.setDefaultBinsize(0.2)
     # ds.plotHist(np.arange(0,30000,10), fv, states=None)
@@ -44,17 +48,20 @@ def _calibrate(data, ds, cal_state, line_names, fv="filtValueDC"):
     data.alignToReferenceChannel(ds, fv, np.arange(0, 20000,  10))
     data.calibrateFollowingPlan(fv, dlo=20, dhi=25, overwriteRecipe=True)
 
-
+# Need to determine when to re-calibrate
 def calibrate(rd, calinfo):
     """
     rd : A RawData object
     calinfo : a CalibrationInfo object
     """
-
-    cs = calinfo.cal_state
-    ln = calinfo.line_names
-    _calibrate(rd.data, rd.ds, cs, ln, rd.attribute)
-
+    if not rd.calibrated:
+        print("Calibrating")
+        cs = calinfo.cal_state
+        ln = calinfo.line_names
+        _calibrate(rd.data, rd.ds, cs, ln, rd.attribute)
+        rd.calibrated = True
+    else:
+        print("Calibration already present")
 
 def process(rd, calinfo):
     drift_correct(rd)

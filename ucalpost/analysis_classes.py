@@ -9,6 +9,7 @@ class RawData:
     def __init__(self, off_filename):
         self.off_filename = off_filename
         self.calibrated = False
+        self.driftCorrected = False
         self.attribute = "filtValueDC"
         self.load_data()
         self.load_ds()
