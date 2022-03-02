@@ -1,7 +1,6 @@
 from tiled.client import from_profile
 from os import path
 from databroker.queries import TimeRange
-from analysis_classes import RawData, CalibrationInfo
 import datetime
 
 db = from_profile("ucal")
@@ -60,6 +59,6 @@ def getRunFromStop(doc):
 def get_samplename(run):
     return run.start['sample_args']['sample_name']['value']
 
-tes_runs = db.search(TimeRange(since="2022-01-26", until="2022-01-28"))
-sample_runs = tes_runs.search({"sample_args": {"$exists": True}})
-run = sample_runs[-1]
+#tes_runs = db.search(TimeRange(since="2022-01-26", until="2022-01-28"))
+#sample_runs = tes_runs.search({"sample_args": {"$exists": True}})
+#run = sample_runs[-1]

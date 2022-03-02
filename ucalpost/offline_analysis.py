@@ -1,7 +1,7 @@
-from run_info import (getRunFromStop, get_filename, get_cal, get_tes_state,
+from .run_info import (getRunFromStop, get_filename, get_cal, get_tes_state,
                       get_line_names, get_save_directory)
-from analysis_classes import RawData, CalibrationInfo
-from analysis_routines import process, save_tes_arrays
+from .analysis_classes import RawData, CalibrationInfo
+from .analysis_routines import process, save_tes_arrays
 from bluesky.callbacks.zmq import RemoteDispatcher
 
 
@@ -15,6 +15,7 @@ class AnalysisLoader:
     def __init__(self):
         self.off_filename = None
         self.rd = None
+        self.ci = None
         
     def getAnalysisObjects(self, run, cal=None):
         off_filename = get_filename(run)
@@ -29,10 +30,22 @@ class AnalysisLoader:
             # scan_filename = get_logname(run)
         if cal is None:
             cal = get_cal(run)
+        cal_savedir = get_save_directory(cal)
         cal_state = get_tes_state(cal)
         line_names = get_line_names(cal)
-        calinfo = CalibrationInfo(cal_state, line_names)
-        return self.rd, calinfo
+        cal_filename = get_filename(cal)
+            
+        if self.ci is None:
+            self.ci = CalibrationInfo(cal_filename, cal_savedir, cal_state, line_names)
+            self.cal_filename = cal_filename
+        elif cal_filename != self.cal_filename:
+            self.ci = CalibrationInfo(cal_filename, cal_savedir, cal_state, line_names)
+        else:
+            self.ci.refresh()
+            self.ci.cal_state = cal_state
+            self.ci.line_names = line_names
+            self.ci.savedir = cal_savedir
+        return self.rd, self.ci
 
 
 def run_analysis(run, loader=None, cal=None):
@@ -58,8 +71,11 @@ def getDocumentHandler():
             print(name)
     return _handler
 
-if __name__ == "__main__":
+def dispatch():
     d = RemoteDispatcher('localhost:5578')
     d.subscribe(getDocumentHandler())
     print("Ready for documents, starting handler")
     d.start()
+    
+if __name__ == "__main__":
+    dispatch()

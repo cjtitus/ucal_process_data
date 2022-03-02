@@ -17,6 +17,7 @@ def ds_learnCalibrationPlanFromEnergiesAndPeaks(self, attr, states, ph_fwhm, lin
 
 mass.off.Channel.learnCalibrationPlanFromEnergiesAndPeaks = ds_learnCalibrationPlanFromEnergiesAndPeaks
 
+
 # Understand how to intelligently re-drift-correct as data comes in
 def _drift_correct(data):
     data.learnDriftCorrection()
@@ -56,15 +57,15 @@ def calibrate(rd, calinfo):
     """
     if not rd.calibrated:
         print("Calibrating")
-        cs = calinfo.cal_state
-        ln = calinfo.line_names
-        _calibrate(rd.data, rd.ds, cs, ln, rd.attribute)
+        calinfo.calibrate()
+        rd.data.calibrationLoadFromHDF5Simple(calinfo.cal_file)
         rd.calibrated = True
     else:
         print("Calibration already present")
 
 def process(rd, calinfo):
-    drift_correct(rd)
+    # cal transfer doesn't use dc anyway yet
+    #drift_correct(rd) 
     calibrate(rd, calinfo)
 
 
@@ -75,7 +76,11 @@ def save_tes_arrays(rd, savedir, state):
     energies = []
     channels = []
     for ds in rd.data.values():
-        uns, es = ds.getAttr(["unixnano", "energy"], state)
+        try:
+            uns, es = ds.getAttr(["unixnano", "energy"], state)
+        except:
+            print(f"{ds.channum} failed")
+            ds.markBad("Failed to get energy")
         ch = np.zeros_like(uns) + ds.channum
         timestamps.append(uns)
         energies.append(es)
@@ -85,6 +90,7 @@ def save_tes_arrays(rd, savedir, state):
     ch_arr = np.concatenate(channels)
     sort_idx = np.argsort(ts_arr)
     savefile = os.path.join(savedir, f"tes_{state}")
+    print(f"Saving {savefile}")
     np.savez(savefile,
              timestamps=ts_arr[sort_idx],
              energies=en_arr[sort_idx],
