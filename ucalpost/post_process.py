@@ -22,6 +22,11 @@ class ProcessedData:
         energies = self.select_between_times(start, stop)
         return np.sum((energies < ulim) & (energies > llim))
         
+    def histogram_between_times(self, start, stop, e_bins):
+        energies = self.select_between_times(start, stop)
+        ehist, _ = np.histogram(energies, e_bins)
+        return ehist
+        
 class LogData:
     def __init__(self, start_times, stop_times, motor_name, motor_vals):
         self.start_times = start_times
@@ -40,7 +45,26 @@ class ScanData:
             counts[n] = self.data.sum_roi_between_times(self.log.start_times[n], self.log.stop_times[n], llim, ulim)
         return counts, self.log.motor_vals
     
+    def getScan2d(self, llim, ulim, eres=0.3):
+        mono_list = self.log.motor_vals
+        n_e_pts = int((ulim - llim)//eres)
+        e_bins = np.linspace(llim, ulim, n_e_pts)
+        e_centers = (e_bins[1:] + e_bins[:-1])/2
 
+        mono_grid, energy_grid = np.meshgrid(mono_list, e_centers)
+        counts = np.zeros_like(mono_grid)
+        for n in range(len(mono_list)):
+            counts[:, n] = self.data.histogram_between_times(self.log.start_times[n],
+                                                             self.log.stop_times[n], e_bins)
+        return counts, mono_grid, energy_grid
+
+    def getEmission(self, llim, ulim, eres=0.3, strictTimebins=False):
+        n_e_pts = int((ulim - llim)//eres)
+        e_bins = np.linspace(llim, ulim, n_e_pts)
+        e_centers = (e_bins[1:] + e_bins[:-1])/2
+        emission = self.data.histogram_between_times(self.log.start_times[0], self.log.stop_times[-1], e_bins)
+        return emission, e_centers
+        
 def data_from_file(filename):
     data = np.load(filename)
     timestamps = data['timestamps']*1e-9 # data is stored as nanoseconds
