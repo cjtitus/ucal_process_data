@@ -1,5 +1,5 @@
-from .run_info import (getRunFromStop, get_filename, get_cal, get_tes_state,
-                      get_line_names, get_save_directory)
+from .run import (getRunFromStop, get_filename, get_cal, get_tes_state,
+                  get_line_names, get_save_directory)
 from .analysis_classes import RawData, CalibrationInfo
 from .analysis_routines import process, save_tes_arrays
 from bluesky.callbacks.zmq import RemoteDispatcher
@@ -16,7 +16,7 @@ class AnalysisLoader:
         self.off_filename = None
         self.rd = None
         self.ci = None
-        
+
     def getAnalysisObjects(self, run, cal=None):
         off_filename = get_filename(run)
         if self.rd is None:
@@ -34,7 +34,7 @@ class AnalysisLoader:
         cal_state = get_tes_state(cal)
         line_names = get_line_names(cal)
         cal_filename = get_filename(cal)
-            
+
         if self.ci is None:
             self.ci = CalibrationInfo(cal_filename, cal_savedir, cal_state, line_names)
             self.cal_filename = cal_filename
@@ -61,21 +61,24 @@ def run_analysis(run, loader=None, cal=None):
 
 
 def getDocumentHandler():
-    loader = AnalysisLoader()    
+    loader = AnalysisLoader()
+
     def _handler(name, doc):
         if name == "stop":
-            #run_analysis(stop)
-            run = getRunFromStop(stop)
+            # run_analysis(stop)
+            run = getRunFromStop(doc)
             run_analysis(run, loader)
         else:
             print(name)
     return _handler
+
 
 def dispatch():
     d = RemoteDispatcher('localhost:5578')
     d.subscribe(getDocumentHandler())
     print("Ready for documents, starting handler")
     d.start()
-    
+
+
 if __name__ == "__main__":
     dispatch()
