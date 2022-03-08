@@ -72,7 +72,8 @@ def process(rd, calinfo):
     calibrate(rd, calinfo)
 
 
-def save_tes_arrays(rd, savedir, state):
+def save_tes_arrays(rd, savefile, state):
+    savedir = os.path.dirname(savefile)
     if not os.path.exists(savedir):
         os.makedirs(savedir)
     timestamps = []
@@ -92,7 +93,6 @@ def save_tes_arrays(rd, savedir, state):
     en_arr = np.concatenate(energies)
     ch_arr = np.concatenate(channels)
     sort_idx = np.argsort(ts_arr)
-    savefile = os.path.join(savedir, f"tes_{state}")
     print(f"Saving {savefile}")
     np.savez(savefile,
              timestamps=ts_arr[sort_idx],

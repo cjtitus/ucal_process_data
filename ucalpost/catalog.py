@@ -1,4 +1,5 @@
 from databroker.queries import TimeRange, FullText, PartialUID, RawMongo
+from .run import summarize_run
 
 
 def filter_by_stop(catalog):
@@ -44,3 +45,17 @@ def list_start_key_vals(catalog, *keys):
         if s is not None:
             vals.add(s)
     return vals
+
+
+def summarize_catalog(catalog):
+    groupname = ""
+    for n in range(len(catalog)):
+        uid, run = catalog.items_indexer[n]
+        group = run.metadata['start'].get('group', '')
+        if group != groupname:
+            groupname = group
+            if groupname != "":
+                print(f"Group: {groupname}")
+        print("-------------")
+        print(f"uid: {uid[:9]}...")
+        summarize_run(run)

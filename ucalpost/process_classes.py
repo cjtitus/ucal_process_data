@@ -120,6 +120,14 @@ def get_analyzed_filename(run):
     return filename
 
 
+def is_run_processed(run):
+    filename = get_analyzed_filename(run)
+    if os.path.exists(filename):
+        return True
+    else:
+        return False
+
+
 def process_default(run):
     roi_keys = run.primary.descriptors[0]['object_keys']['tes']
     desc = run.primary.descriptors[0]['data_keys']
@@ -128,3 +136,6 @@ def process_default(run):
     logname = get_logname(run)
     if exists(filename):
         data = np.load(filename)
+
+
+        

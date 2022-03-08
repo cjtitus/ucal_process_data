@@ -2,6 +2,7 @@ from .run import (getRunFromStop, get_filename, get_cal, get_tes_state,
                   get_line_names, get_save_directory)
 from .analysis_classes import RawData, CalibrationInfo
 from .analysis_routines import process, save_tes_arrays
+from .process_classes import get_analyzed_filename
 from bluesky.callbacks.zmq import RemoteDispatcher
 
 
@@ -55,9 +56,9 @@ def run_analysis(run, loader=None, cal=None):
     state = get_tes_state(run)
     print(f"Processing {rd.off_filename}, state: {state}")
     process(rd, calinfo)
-    savedir = get_save_directory(run)
-    print(f"Saving TES Arrays to {savedir}")
-    save_tes_arrays(rd, savedir, state)
+    savefile = get_analyzed_filename(run)
+    print(f"Saving TES Arrays to {savefile}")
+    save_tes_arrays(rd, savefile, state)
 
 
 def getDocumentHandler():

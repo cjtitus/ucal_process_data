@@ -59,6 +59,21 @@ def getRunFromStop(doc):
 def get_samplename(run):
     return run.start['sample_args']['sample_name']['value']
 
+
+def summarize_run(run):
+    scanid = run.metadata['start']['scan_id']
+    sample = get_samplename(run)
+    scantype = run.metadata['start']['scantype']
+    if scantype == 'xas':
+        edge = run.metadata['start']['edge']
+    print(f"Scan {scanid}")
+    print(f"Sample name: {sample}")
+    if scantype == 'xas':
+        edge = run.metadata['start']['edge']
+        print(f"Scantype: {scantype}, edge: {edge}")
+    else:
+        print(f"Scantype: {scantype}")
+
 #tes_runs = db.search(TimeRange(since="2022-01-26", until="2022-01-28"))
 #sample_runs = tes_runs.search({"sample_args": {"$exists": True}})
 #run = sample_runs[-1]
