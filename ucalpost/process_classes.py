@@ -1,7 +1,7 @@
 import numpy as np
 import os
 import json
-from .run_info import get_save_directory, get_tes_state, get_logname
+from .run import get_save_directory, get_tes_state, get_logname
 
 
 """
