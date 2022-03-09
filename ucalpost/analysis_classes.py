@@ -38,7 +38,6 @@ class RawData:
     def __init__(self, off_filename, state, savefile, data=None):
         self.off_filename = off_filename
         self.calibrated = False
-        self.driftCorrected = False
         self.attribute = "filtValueDC"
         self.state = state
         self.savefile = savefile
@@ -89,7 +88,7 @@ class CalibrationInfo(RawData):
 
         if savedir is not None:
             savebase = "_".join(path.basename(self.off_filename).split('_')[:-1])
-            savename = f"{savebase}_{self.cal_state}_cal.hdf5"
+            savename = f"{savebase}_{self.state}_cal.hdf5"
             cal_file_name = path.join(savedir, savename)
         else:
             cal_file_name = None
