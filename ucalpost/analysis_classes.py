@@ -99,6 +99,6 @@ class CalibrationInfo(RawData):
         else:
             _calibrate(self.data, self.ds, self.state, self.line_names, fv=attr)
             if cal_file_name is not None:
-                self.data.calibrationSaveToHDF5Simple(savename)
+                self.data.calibrationSaveToHDF5Simple(cal_file_name)
                 self.cal_file = cal_file_name
             self.calibrated = True
