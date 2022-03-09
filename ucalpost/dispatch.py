@@ -20,32 +20,31 @@ class AnalysisLoader:
 
     def getAnalysisObjects(self, run, cal=None):
         off_filename = get_filename(run)
+        state = get_tes_state(run)
+        savefile = get_analyzed_filename(run)
         if self.rd is None:
-            self.rd = RawData(off_filename)
+            self.rd = RawData(off_filename, state, savefile)
             self.off_filename = off_filename
         elif off_filename != self.off_filename:
-            self.rd = RawData(off_filename)
+            self.rd = RawData(off_filename, state, savefile)
             self.off_filename = off_filename
         else:
-            self.rd.refresh()
-            # scan_filename = get_logname(run)
+            self.rd.update(state, savefile)
         if cal is None:
             cal = get_cal(run)
         cal_savedir = get_save_directory(cal)
         cal_state = get_tes_state(cal)
         line_names = get_line_names(cal)
         cal_filename = get_filename(cal)
+        cal_savefile = get_analyzed_filename(cal)
 
         if self.ci is None:
-            self.ci = CalibrationInfo(cal_filename, cal_savedir, cal_state, line_names)
+            self.ci = CalibrationInfo(cal_filename, cal_state, cal_savefile, cal_savedir, line_names, data=self.rd.data)
             self.cal_filename = cal_filename
         elif cal_filename != self.cal_filename:
-            self.ci = CalibrationInfo(cal_filename, cal_savedir, cal_state, line_names)
+            self.ci = CalibrationInfo(cal_filename, cal_state, cal_savefile, cal_savedir, line_names, data=self.rd.data)
         else:
-            self.ci.refresh()
-            self.ci.cal_state = cal_state
-            self.ci.line_names = line_names
-            self.ci.savedir = cal_savedir
+            self.ci.update(cal_state, cal_savefile, cal_savedir, line_names)
         return self.rd, self.ci
 
 
@@ -53,12 +52,11 @@ def run_analysis(run, loader=None, cal=None):
     if loader is None:
         loader = AnalysisLoader()
     rd, calinfo = loader.getAnalysisObjects(run, cal)
-    state = get_tes_state(run)
-    print(f"Processing {rd.off_filename}, state: {state}")
+    print(f"Processing {rd.off_filename}, state: {rd.state}")
     process(rd, calinfo)
-    savefile = get_analyzed_filename(run)
-    print(f"Saving TES Arrays to {savefile}")
-    save_tes_arrays(rd, savefile, state)
+    print(f"Saving TES Arrays to {rd.savefile}")
+    save_tes_arrays(rd)
+    save_tes_arrays(calinfo)
 
 
 def getDocumentHandler():

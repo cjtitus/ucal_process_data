@@ -72,10 +72,16 @@ def process(rd, calinfo):
     calibrate(rd, calinfo)
 
 
-def save_tes_arrays(rd, savefile, state):
+def save_tes_arrays(rd, overwrite=False):
+    savefile = rd.savefile
+    state = rd.state
     savedir = os.path.dirname(savefile)
     if not os.path.exists(savedir):
         os.makedirs(savedir)
+    if os.path.exists(savefile) and not overwrite:
+        print(f"Not overwriting {savefile}")
+        return
+
     timestamps = []
     energies = []
     channels = []

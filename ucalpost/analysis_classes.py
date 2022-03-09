@@ -35,17 +35,23 @@ mass.off.ChannelGroup.calibrationSaveToHDF5Simple = data_calibrationSaveToHDF5Si
 
 
 class RawData:
-    def __init__(self, off_filename):
+    def __init__(self, off_filename, state, savefile, data=None):
         self.off_filename = off_filename
         self.calibrated = False
         self.driftCorrected = False
         self.attribute = "filtValueDC"
-        self.load_data()
+        self.state = state
+        self.savefile = savefile
+        self.load_data(data)
         self.load_ds()
 
-    def load_data(self):
-        data = mass.off.ChannelGroup(getOffList(self.off_filename)[:1000],
-                                     excludeStates=[])
+    def load_data(self, data=None):
+        if data is None:
+            data = mass.off.ChannelGroup(getOffList(self.off_filename)[:1000],
+                                         excludeStates=[])
+        elif self.off_filename not in data.offFileNames:
+            data = mass.off.ChannelGroup(getOffList(self.off_filename)[:1000],
+                                         excludeStates=[])
         self.data = data
 
     def load_ds(self):
@@ -54,14 +60,27 @@ class RawData:
     def refresh(self):
         self.data.refreshFromFiles()
 
+    def update(self, state, savefile):
+        self.state = state
+        self.savefile = savefile
+        self.refresh()
+
+    @property
+    def driftCorrected(self):
+        return hasattr(self.data, "filtValueDC")
+
 
 class CalibrationInfo(RawData):
-    def __init__(self, off_filename, savedir, cal_state, line_names):
-        self.cal_state = cal_state
+    def __init__(self, off_filename, state, savefile, savedir, line_names, **kwargs):
         self.line_names = line_names
         self.cal_file = None
         self.savedir = savedir
-        super().__init__(off_filename)
+        super().__init__(off_filename, state, savefile, **kwargs)
+
+    def update(self, state, savefile, savedir, line_names):
+        super().update(state, savefile)
+        self.savedir = savedir
+        self.line_names = line_names
 
     def calibrate(self, savedir=None, redo=False):
         attr = "filtValueDC" if self.driftCorrected else "filtValue"
@@ -69,9 +88,9 @@ class CalibrationInfo(RawData):
             savedir = self.savedir
 
         if savedir is not None:
-            savebase = "_".join(path.basename(self.off_filename).split('_')[:-1]) + "cal.hdf5"
-            savename = path.join(savedir, savebase)
-            cal_file_name = savename
+            savebase = "_".join(path.basename(self.off_filename).split('_')[:-1])
+            savename = f"{savebase}_{self.cal_state}_cal.hdf5"
+            cal_file_name = path.join(savedir, savename)
         else:
             cal_file_name = None
 
@@ -79,7 +98,7 @@ class CalibrationInfo(RawData):
             self.cal_file = cal_file_name
             self.calibrated = True
         else:
-            _calibrate(self.data, self.ds, self.cal_state, self.line_names, fv=attr)
+            _calibrate(self.data, self.ds, self.state, self.line_names, fv=attr)
             if cal_file_name is not None:
                 self.data.calibrationSaveToHDF5Simple(savename)
                 self.cal_file = cal_file_name
