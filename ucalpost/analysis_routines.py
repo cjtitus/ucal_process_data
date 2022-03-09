@@ -104,3 +104,27 @@ def save_tes_arrays(rd, overwrite=False):
              timestamps=ts_arr[sort_idx],
              energies=en_arr[sort_idx],
              channels=ch_arr[sort_idx])
+
+
+def summarize_calibration(calinfo):
+    savedir = calinfo.savefile[:-4] + '_summary'
+    if not os.path.exists(savedir):
+        os.mkdirs(savedir)
+    
+    nstack = 7
+    for n, chan in enumerate(calinfo.data):
+        ds = calinfo.data[chan]
+        energies = ds.getAttr("energy", calinfo.state)
+        bins = np.arange(200, 1000, 1)
+        # work in progress
+        if n%nstack == 0:
+            if n != 0:
+                ax.legend()
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            ax.set_xlabel("Emission energy (eV)")
+            ax.set_ylabel("Counts")
+            fig.title("Stacked calibration")
+        c, e = caldata.getEmission(200, 1000, channels=[chan])
+        ax.plot(e, c, label=f"Chan {chan}")
+    ax.legend()
