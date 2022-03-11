@@ -75,20 +75,20 @@ def find_poly_residual(cal_energies, opt_assignment, degree):
     return coeff, residual, residual_rms
 
 
-def _calibrate(data, ds, cal_state, line_names, fv="filtValueDC", rms_cutoff=1):
+def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=1):
     data.setDefaultBinsize(0.2)
     # ds.plotHist(np.arange(0,30000,10), fv, states=None)
     line_energies = get_line_energies(line_names)
-    ds.learnCalibrationPlanFromEnergiesAndPeaks(attr=fv, ph_fwhm=50,
-                                                states=cal_state,
-                                                line_names=line_energies)
-
-    ds.calibrateFollowingPlan(fv, overwriteRecipe=True, dlo=7, dhi=7)
     # ds.diagnoseCalibration()
 
     data.alignToReferenceChannel(ds, fv, np.arange(1000, 27000,  10))
-    data.calibrateFollowingPlan(fv, dlo=20, dhi=25, overwriteRecipe=True)
-    for ds in data:
+    data.calibrateFollowingPlan(fv, dlo=7, dhi=7, overwriteRecipe=True)
+    for ds in data.values():
+        ds.learnCalibrationPlanFromEnergiesAndPeaks(attr=fv, ph_fwhm=50,
+                                                states=cal_state,
+                                                line_names=line_energies)
+        ds.calibrateFollowingPlan(fv, overwriteRecipe=True, dlo=7, dhi=7)
+
         ecal = ds.recipes['energy'].f
         degree = min(len(ecal._ph) - 1, 4)
         _, _, rms = find_poly_residual(ecal._energies, ecal._ph, degree)

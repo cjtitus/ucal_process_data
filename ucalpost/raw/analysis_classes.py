@@ -71,7 +71,7 @@ class CalibrationInfo(RawData):
             self.cal_file = cal_file_name
             self.calibrated = True
         else:
-            _calibrate(self.data, self.ds, self.state, self.line_names, fv=attr)
+            _calibrate(self.data, self.state, self.line_names, fv=attr)
             if cal_file_name is not None:
                 if not path.exists(path.dirname(cal_file_name)):
                     os.makedirs(path.dirname(cal_file_name))

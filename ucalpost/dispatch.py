@@ -2,7 +2,7 @@ from .run import (getRunFromStop, get_filename, get_cal, get_tes_state,
                   get_line_names, get_save_directory)
 from .raw.analysis_classes import RawData, CalibrationInfo
 from .raw.analysis_routines import process, save_tes_arrays
-from .raw.process_classes import get_analyzed_filename
+from .process_classes import get_analyzed_filename
 from bluesky.callbacks.zmq import RemoteDispatcher
 
 
