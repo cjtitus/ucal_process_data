@@ -1,5 +1,6 @@
 import numpy as np
 from os import path
+import os
 import mass
 import mass.off
 from mass.off import getOffFileListFromOneFile as getOffList
@@ -99,6 +100,8 @@ class CalibrationInfo(RawData):
         else:
             _calibrate(self.data, self.ds, self.state, self.line_names, fv=attr)
             if cal_file_name is not None:
+                if not path.exists(path.dirname(cal_file_name)):
+                    os.makedirs(path.dirname(cal_file_name))
                 self.data.calibrationSaveToHDF5Simple(cal_file_name)
                 self.cal_file = cal_file_name
             self.calibrated = True

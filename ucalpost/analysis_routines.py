@@ -1,4 +1,5 @@
 import mass
+from mass.calibration.algorithms import line_names_and_energies
 import mass.off
 import os
 import numpy as np
@@ -47,7 +48,7 @@ def _calibrate(data, ds, cal_state, line_names, fv="filtValueDC"):
     ds.calibrateFollowingPlan(fv, overwriteRecipe=True, dlo=20, dhi=25)
     # ds.diagnoseCalibration()
 
-    data.alignToReferenceChannel(ds, fv, np.arange(0, 20000,  10))
+    data.alignToReferenceChannel(ds, fv, np.arange(1000, 27000,  10))
     data.calibrateFollowingPlan(fv, dlo=20, dhi=25, overwriteRecipe=True)
 
 
@@ -110,21 +111,31 @@ def summarize_calibration(calinfo):
     savedir = calinfo.savefile[:-4] + '_summary'
     if not os.path.exists(savedir):
         os.mkdirs(savedir)
-    
+    lines = line_names_and_energies(calinfo.line_names)
     nstack = 7
+    naxes = len(calinfo.line_names)
     for n, chan in enumerate(calinfo.data):
         ds = calinfo.data[chan]
         energies = ds.getAttr("energy", calinfo.state)
         bins = np.arange(200, 1000, 1)
+        centers = 0.5*(bins[1:] + bins[:-1])
+        counts = np.histogram(energies, bins)
         # work in progress
-        if n%nstack == 0:
+        if n % nstack == 0:
             if n != 0:
-                ax.legend()
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            ax.set_xlabel("Emission energy (eV)")
-            ax.set_ylabel("Counts")
+                filename = f"cal_{firstchan}_to_{chan}.png"
+                savename = os.path.join(savedir, filename)
+                fig.save(savename)
+            fig = plt.figure(figsize=(2*naxes, 4))
+            fig.subplots_adjust(wspace=0)
+            axlist = fig.subplots(1, naxes, sharey=True)
+            for i in range(naxes):
+                name = lines[0][i]
+                energy = lines[1][i]
+                axlist[i].set_ylim(energy - 20, energy + 20)
+                axlist[i].set_title(name)
             fig.title("Stacked calibration")
-        c, e = caldata.getEmission(200, 1000, channels=[chan])
-        ax.plot(e, c, label=f"Chan {chan}")
-    ax.legend()
+            firstchan = chan
+        for ax in axlist:
+            ax.plot(centers, counts, label=f"Chan {chan}")
+        ax.legend()
