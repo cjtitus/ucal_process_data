@@ -53,24 +53,24 @@ def _calibrate(data, ds, cal_state, line_names, fv="filtValueDC"):
 
 
 # Need to determine when to re-calibrate
-def calibrate(rd, calinfo):
+def calibrate(rd, calinfo, redo=False):
     """
     rd : A RawData object
     calinfo : a CalibrationInfo object
     """
     if not rd.calibrated:
         print("Calibrating")
-        calinfo.calibrate()
+        calinfo.calibrate(redo=redo)
         rd.data.calibrationLoadFromHDF5Simple(calinfo.cal_file)
         rd.calibrated = True
     else:
         print("Calibration already present")
 
 
-def process(rd, calinfo):
+def process(rd, calinfo, redo=False):
     # cal transfer doesn't use dc anyway yet
     # drift_correct(rd)
-    calibrate(rd, calinfo)
+    calibrate(rd, calinfo, redo=redo)
 
 
 def save_tes_arrays(rd, overwrite=False):

@@ -43,6 +43,7 @@ class AnalysisLoader:
             self.cal_filename = cal_filename
         elif cal_filename != self.cal_filename:
             self.ci = CalibrationInfo(cal_filename, cal_state, cal_savefile, cal_savedir, line_names, data=self.rd.data)
+            self.cal_filename = cal_filename
         else:
             self.ci.update(cal_state, cal_savefile, cal_savedir, line_names)
         return self.rd, self.ci
