@@ -80,13 +80,18 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=1):
     # ds.plotHist(np.arange(0,30000,10), fv, states=None)
     line_energies = get_line_energies(line_names)
     # ds.diagnoseCalibration()
+    for ds in data.values():
+        try:
+            ds.learnCalibrationPlanFromEnergiesAndPeaks(attr=fv, ph_fwhm=50,
+                                                        states=cal_state,
+                                                        line_names=line_energies)
+        except ValueError:
+            print("Chan {ds.channum} failed peak assignment")
+            ds.markBad("Failed peak assignment")
 
-    data.alignToReferenceChannel(ds, fv, np.arange(1000, 27000,  10))
+    #data.alignToReferenceChannel(ds, fv, np.arange(1000, 27000,  10))
     data.calibrateFollowingPlan(fv, dlo=7, dhi=7, overwriteRecipe=True)
     for ds in data.values():
-        ds.learnCalibrationPlanFromEnergiesAndPeaks(attr=fv, ph_fwhm=50,
-                                                states=cal_state,
-                                                line_names=line_energies)
         ds.calibrateFollowingPlan(fv, overwriteRecipe=True, dlo=7, dhi=7)
 
         ecal = ds.recipes['energy'].f

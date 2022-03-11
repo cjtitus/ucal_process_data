@@ -25,24 +25,24 @@ def drift_correct(rd):
 
 
 # Need to determine when to re-calibrate
-def calibrate(rd, calinfo, redo=False):
+def calibrate(rd, calinfo, redo=False, rms_cutoff=2):
     """
     rd : A RawData object
     calinfo : a CalibrationInfo object
     """
     if not rd.calibrated:
         print("Calibrating")
-        calinfo.calibrate(redo=redo)
+        calinfo.calibrate(redo=redo, rms_cutoff=rms_cutoff)
         rd.data.calibrationLoadFromHDF5Simple(calinfo.cal_file)
         rd.calibrated = True
     else:
         print("Calibration already present")
 
 
-def process(rd, calinfo, redo=False):
+def process(rd, calinfo, redo=False, rms_cutoff=2):
     # cal transfer doesn't use dc anyway yet
     # drift_correct(rd)
-    calibrate(rd, calinfo, redo=redo)
+    calibrate(rd, calinfo, redo=redo, rms_cutoff=2)
     summarize_calibration(calinfo, redo=redo)
 
 

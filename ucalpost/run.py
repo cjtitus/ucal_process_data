@@ -43,7 +43,7 @@ def get_tes_state(run):
 
 
 def get_line_names(cal_run):
-    return ["ck", "nk", "ok", "fela", "felb", "nila", "cula"]
+    return ["ck", "nk", "ok", "fela", "nila", "cula"]
 
 
 def get_cal(run):
