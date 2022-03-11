@@ -4,35 +4,8 @@ import os
 import mass
 import mass.off
 from mass.off import getOffFileListFromOneFile as getOffList
-from .analysis_routines import _calibrate
+from .calibration import _calibrate
 import h5py
-
-
-def data_calibrationLoadFromHDF5Simple(self, h5name):
-    print(f"loading calibration from {h5name}")
-    with h5py.File(h5name, "r") as h5:
-        for channum_str in h5.keys():
-            cal = mass.calibration.EnergyCalibration.load_from_hdf5(h5, channum_str)
-            channum = int(channum_str)
-            if channum in self:
-                ds = self[channum]
-                ds.recipes.add("energy", cal, ["filtValue"], overwrite=True)
-    # set other channels bad
-    for ds in self.values():
-        if "energy" not in ds.recipes.keys():
-            ds.markBad("no loaded calibration")
-mass.off.ChannelGroup.calibrationLoadFromHDF5Simple = data_calibrationLoadFromHDF5Simple
-
-
-def data_calibrationSaveToHDF5Simple(self, h5name):
-    print(f"writing calibration to {h5name}")
-    with h5py.File(h5name, "w") as h5:
-        for ds in self.values():
-            cal = ds.recipes["energy"].f
-            cal.save_to_hdf5(h5, f"{ds.channum}")
-
-
-mass.off.ChannelGroup.calibrationSaveToHDF5Simple = data_calibrationSaveToHDF5Simple
 
 
 class RawData:
