@@ -60,8 +60,11 @@ def find_opt_assignment(peak_positions, line_names, nextra=2, nincrement=3,
         if acc > rms_cutoff:
             n_sel_pp += nincrement
             if n_sel_pp > nmax:
-                raise ValueError("no peak assignment succeeded: acc %g, rms_cutoff %g" %
-                                 (acc, rms_cutoff))
+                print("no peak assignment succeeded: acc %g, rms_cutoff %g" %
+                      (acc, rms_cutoff))
+                return name_e, energies, list(opt_assign)
+                # raise ValueError("no peak assignment succeeded: acc %g, rms_cutoff %g" %
+                # (acc, rms_cutoff))
             else:
                 continue
         else:
@@ -143,9 +146,9 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=1, assi
             ds.markBad("Failed peak assignment")
 
     #data.alignToReferenceChannel(ds, fv, np.arange(1000, 27000,  10))
-    #data.calibrateFollowingPlan(fv, dlo=7, dhi=7, overwriteRecipe=True)
+    data.calibrateFollowingPlan(fv, dlo=7, dhi=7, overwriteRecipe=True)
     for ds in data.values():
-        ds.calibrateFollowingPlan(fv, overwriteRecipe=True, dlo=7, dhi=7)
+        # ds.calibrateFollowingPlan(fv, overwriteRecipe=True, dlo=7, dhi=7)
 
         ecal = ds.recipes['energy'].f
         degree = min(len(ecal._ph) - 1, 4)
