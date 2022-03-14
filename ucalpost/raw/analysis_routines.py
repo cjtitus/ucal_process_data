@@ -39,10 +39,10 @@ def calibrate(rd, calinfo, redo=False, rms_cutoff=2):
         print("Calibration already present")
 
 
-def process(rd, calinfo, redo=False, rms_cutoff=2):
+def process(rd, calinfo, redo=False, rms_cutoff=0.2):
     # cal transfer doesn't use dc anyway yet
     # drift_correct(rd)
-    calibrate(rd, calinfo, redo=redo, rms_cutoff=2)
+    calibrate(rd, calinfo, redo=redo, rms_cutoff=rms_cutoff)
     summarize_calibration(calinfo, redo=redo)
 
 

@@ -23,8 +23,8 @@ def get_line_energies(line_names):
     return line_energies
 
 
-def find_opt_assignment(peak_positions, line_names, nextra=2, nincrement=3,
-                        nextramax=8, rms_cutoff=1.0):
+def find_opt_assignment(peak_positions, line_names, nextra=2, nincrement=2,
+                        nextramax=4, rms_cutoff=0.2, polyorder=2, curvename="gain"):
     """Tries to find an assignment of peaks to line names that is reasonably self consistent and smooth
 
     Args:
@@ -41,7 +41,6 @@ def find_opt_assignment(peak_positions, line_names, nextra=2, nincrement=3,
             The default number works reasonably well for NSLS-II data
     """
     name_e, e_e = line_names_and_energies(line_names)
-    polyorder = 4
     n_sel_pp = len(line_names) + nextra  # number of peak_positions to use to line up to line_names
     nmax = len(line_names) + nextramax
     while True:
@@ -50,8 +49,9 @@ def find_opt_assignment(peak_positions, line_names, nextra=2, nincrement=3,
         assign = np.array(list(itertools.combinations(sel_positions, len(line_names))))
         assign.sort(axis=1)
         acc_est = []
+
         for n in range(assign.shape[0]):
-            _, _, rms = find_poly_residual(energies, assign[n, :], polyorder)
+            _, _, rms = find_poly_residual(energies, assign[n, :], polyorder, curvename)
             acc_est.append(rms)
         opt_assign_i = np.argmin(acc_est)
         acc = acc_est[opt_assign_i]
@@ -71,14 +71,14 @@ def find_opt_assignment(peak_positions, line_names, nextra=2, nincrement=3,
             return name_e, energies, list(opt_assign)
 
 
-def ds_learnCalibrationPlanFromEnergiesAndPeaks(self, attr, states, ph_fwhm, line_names, assignment="nsls"):
+def ds_learnCalibrationPlanFromEnergiesAndPeaks(self, attr, states, ph_fwhm, line_names, assignment="nsls", **kwargs):
     peak_ph_vals, _peak_heights = mass.algorithms.find_local_maxima(self.getAttr(attr, indsOrStates=states), ph_fwhm)
     if assignment == "nsls":
         _name_e, energies_out, opt_assignments = find_opt_assignment(peak_ph_vals,
-                                                                     line_names, rms_cutoff=1)
+                                                                     line_names, rms_cutoff=1, **kwargs)
     else:
         _name_e, energies_out, opt_assignments = mass.algorithms.find_opt_assignment(peak_ph_vals,
-                                                                                     line_names, maxacc=0.1)
+                                                                                     line_names, maxacc=0.1, **kwargs)
 
     self.calibrationPlanInit(attr)
     for ph, name in zip(opt_assignments, _name_e):
@@ -120,17 +120,27 @@ def data_calibrationSaveToHDF5Simple(self, h5name):
 mass.off.ChannelGroup.calibrationSaveToHDF5Simple = data_calibrationSaveToHDF5Simple
 
 
-def find_poly_residual(cal_energies, opt_assignment, degree):
-    x = np.insert(opt_assignment, 0, 0.0)
-    y = np.insert(cal_energies, 0, 0.0)
+def find_poly_residual(cal_energies, opt_assignment, degree, curvename="gain"):
+    if curvename == "gain":
+        x = opt_assignment
+        y = opt_assignment/cal_energies
+    elif curvename == "loglog":
+        y = np.log(opt_assignment)
+        x = np.log(cal_energies)
+    elif curvename == "loggain":
+        x = opt_assignment
+        y = np.log(opt_assignment/cal_energies)
+    elif curvename == "linear":
+        x = np.insert(opt_assignment, 0, 0.0)
+        y = np.insert(cal_energies, 0, 0.0)
     coeff = np.polyfit(x, y, degree)
     poly = np.poly1d(coeff)
-    residual = poly(opt_assignment)-cal_energies
+    residual = poly(x)-y
     residual_rms = np.sqrt(sum(np.square(residual))/len(cal_energies))
     return coeff, residual, residual_rms
 
 
-def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=1, assignment="nsls"):
+def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, assignment="nsls", **kwargs):
     data.setDefaultBinsize(0.2)
     # ds.plotHist(np.arange(0,30000,10), fv, states=None)
     line_energies = get_line_energies(line_names)
@@ -140,7 +150,7 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=1, assi
             ds.learnCalibrationPlanFromEnergiesAndPeaks(attr=fv, ph_fwhm=50,
                                                         states=cal_state,
                                                         line_names=line_energies,
-                                                        assignment=assignment)
+                                                        assignment=assignment, **kwargs)
         except ValueError:
             print("Chan {ds.channum} failed peak assignment")
             ds.markBad("Failed peak assignment")
@@ -151,8 +161,8 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=1, assi
         # ds.calibrateFollowingPlan(fv, overwriteRecipe=True, dlo=7, dhi=7)
 
         ecal = ds.recipes['energy'].f
-        degree = min(len(ecal._ph) - 1, 4)
-        _, _, rms = find_poly_residual(ecal._energies, ecal._ph, degree)
+        degree = min(len(ecal._ph) - 1, 2)
+        _, _, rms = find_poly_residual(ecal._energies, ecal._ph, degree, 'gain')
         if rms > rms_cutoff:
             msg = f"Failed calibration cut with RMS: {rms}, cutoff: {rms_cutoff}"
             print(msg)
@@ -162,7 +172,7 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=1, assi
 def summarize_calibration(calinfo, redo=False):
     savedir = calinfo.savefile[:-4] + '_summary'
     if not os.path.exists(savedir):
-        os.mkdirs(savedir)
+        os.makedirs(savedir)
     line_energies = get_line_energies(calinfo.line_names)
     nstack = 7
     naxes = len(calinfo.line_names)
@@ -171,24 +181,25 @@ def summarize_calibration(calinfo, redo=False):
         energies = ds.getAttr("energy", calinfo.state)
         bins = np.arange(200, 1000, 1)
         centers = 0.5*(bins[1:] + bins[:-1])
-        counts = np.histogram(energies, bins)
+        counts, _ = np.histogram(energies, bins)
         # work in progress
         if n % nstack == 0:
             if n != 0:
                 filename = f"cal_{firstchan}_to_{chan}.png"
                 savename = os.path.join(savedir, filename)
                 if not os.path.exists(savename) or redo:
-                    fig.save(savename)
-                fig.close()
+                    fig.savefig(savename)
+                plt.close(fig)
             fig = plt.figure(figsize=(2*naxes, 4))
             fig.subplots_adjust(wspace=0)
             axlist = fig.subplots(1, naxes, sharey=True)
             for i in range(naxes):
                 name = calinfo.line_names[i]
                 energy = line_energies[i]
-                axlist[i].set_ylim(energy - 20, energy + 20)
+                axlist[i].set_xlim(energy - 20, energy + 20)
                 axlist[i].set_title(name)
-            fig.title("Stacked calibration")
+                axlist[i].axvline(energy)
+            fig.suptitle("Stacked calibration")
             firstchan = chan
         for ax in axlist:
             ax.plot(centers, counts, label=f"Chan {chan}")

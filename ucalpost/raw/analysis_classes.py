@@ -55,7 +55,7 @@ class CalibrationInfo(RawData):
         self.savedir = savedir
         self.line_names = line_names
 
-    def calibrate(self, savedir=None, redo=False, rms_cutoff=2):
+    def calibrate(self, savedir=None, redo=False, rms_cutoff=0.2):
         attr = "filtValueDC" if self.driftCorrected else "filtValue"
         if savedir is None:
             savedir = self.savedir
