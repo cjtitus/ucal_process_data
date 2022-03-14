@@ -1,6 +1,8 @@
 import mass
+from mass.calibration.algorithms import line_names_and_energies
 import os
 from os import path
+import itertools
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
@@ -21,9 +23,59 @@ def get_line_energies(line_names):
     return line_energies
 
 
-def ds_learnCalibrationPlanFromEnergiesAndPeaks(self, attr, states, ph_fwhm, line_names):
+def find_opt_assignment(peak_positions, line_names, nextra=2, nincrement=3,
+                        nextramax=8, rms_cutoff=1.0):
+    """Tries to find an assignment of peaks to line names that is reasonably self consistent and smooth
+
+    Args:
+        peak_positions (np.array(dtype=float)): a list of peak locations in arb units,
+            e.g. p_filt_value units
+        line_names (list[str or float)]): a list of calibration lines either as number (which is
+            energies in eV), or name to be looked up in STANDARD_FEATURES
+        nextra (int): the algorithm starts with the first len(line_names) + nextra peak_positions
+        nincrement (int): each the algorithm fails to find a satisfactory peak assignment, it uses
+            nincrement more lines
+        nextramax (int): the algorithm stops incrementint nextra past this value, instead
+            failing with a ValueError saying "no peak assignment succeeded"
+        rms_cutoff (float): an empirical number that determines if an assignment is good enough.
+            The default number works reasonably well for NSLS-II data
+    """
+    name_e, e_e = line_names_and_energies(line_names)
+    polyorder = 4
+    n_sel_pp = len(line_names) + nextra  # number of peak_positions to use to line up to line_names
+    nmax = len(line_names) + nextramax
+    while True:
+        sel_positions = np.asarray(peak_positions[:n_sel_pp], dtype="float")
+        energies = np.asarray(e_e, dtype="float")
+        assign = np.array(list(itertools.combinations(sel_positions, len(line_names))))
+        assign.sort(axis=1)
+        acc_est = []
+        for n in range(assign.shape[0]):
+            _, _, rms = find_poly_residual(energies, assign[n, :], polyorder)
+            acc_est.append(rms)
+        opt_assign_i = np.argmin(acc_est)
+        acc = acc_est[opt_assign_i]
+        opt_assign = assign[opt_assign_i]
+
+        if acc > rms_cutoff:
+            n_sel_pp += nincrement
+            if n_sel_pp > nmax:
+                raise ValueError("no peak assignment succeeded: acc %g, rms_cutoff %g" %
+                                 (acc, rms_cutoff))
+            else:
+                continue
+        else:
+            return name_e, energies, list(opt_assign)
+
+
+def ds_learnCalibrationPlanFromEnergiesAndPeaks(self, attr, states, ph_fwhm, line_names, assignment="nsls"):
     peak_ph_vals, _peak_heights = mass.algorithms.find_local_maxima(self.getAttr(attr, indsOrStates=states), ph_fwhm)
-    _name_e, energies_out, opt_assignments = mass.algorithms.find_opt_assignment(peak_ph_vals, line_names, maxacc=0.1)
+    if assignment == "nsls":
+        _name_e, energies_out, opt_assignments = find_opt_assignment(peak_ph_vals,
+                                                                     line_names, rms_cutoff=1)
+    else:
+        _name_e, energies_out, opt_assignments = mass.algorithms.find_opt_assignment(peak_ph_vals,
+                                                                                     line_names, maxacc=0.1)
 
     self.calibrationPlanInit(attr)
     for ph, name in zip(opt_assignments, _name_e):
@@ -75,7 +127,7 @@ def find_poly_residual(cal_energies, opt_assignment, degree):
     return coeff, residual, residual_rms
 
 
-def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=1):
+def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=1, assignment="nsls"):
     data.setDefaultBinsize(0.2)
     # ds.plotHist(np.arange(0,30000,10), fv, states=None)
     line_energies = get_line_energies(line_names)
@@ -84,13 +136,14 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=1):
         try:
             ds.learnCalibrationPlanFromEnergiesAndPeaks(attr=fv, ph_fwhm=50,
                                                         states=cal_state,
-                                                        line_names=line_energies)
+                                                        line_names=line_energies,
+                                                        assignment=assignment)
         except ValueError:
             print("Chan {ds.channum} failed peak assignment")
             ds.markBad("Failed peak assignment")
 
     #data.alignToReferenceChannel(ds, fv, np.arange(1000, 27000,  10))
-    data.calibrateFollowingPlan(fv, dlo=7, dhi=7, overwriteRecipe=True)
+    #data.calibrateFollowingPlan(fv, dlo=7, dhi=7, overwriteRecipe=True)
     for ds in data.values():
         ds.calibrateFollowingPlan(fv, overwriteRecipe=True, dlo=7, dhi=7)
 
