@@ -98,13 +98,14 @@ class ScanData:
             e = self.data.select_between_times(self.log.start_times[n],
                                                self.log.stop_times[n],
                                                channels=channels)
-            e = e[(e<ulim) & (e > llim)]
+            e = e[(e < ulim) & (e > llim)]
             m = np.zeros_like(e) + mono_list[n]
             mono_arr.append(m)
             emission_arr.append(e)
         mono_arr = np.hstack(mono_arr)
-        emission_arr = np.hstack(mono_arr)
+        emission_arr = np.hstack(emission_arr)
         return mono_arr, emission_arr
+
 
 def data_from_file(filename):
     data = np.load(filename)
