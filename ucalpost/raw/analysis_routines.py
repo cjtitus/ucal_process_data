@@ -1,9 +1,10 @@
 import mass
 
 import os
+from is import path
 import numpy as np
 
-from .calibration import summarize_calibration
+from .calibration import summarize_calibration, make_calibration, load_calibration
 
 
 # Understand how to intelligently re-drift-correct as data comes in
@@ -32,9 +33,8 @@ def calibrate(rd, calinfo, redo=False, rms_cutoff=2):
     """
     if not rd.calibrated:
         print("Calibrating")
-        calinfo.calibrate(redo=redo, rms_cutoff=rms_cutoff)
-        rd.data.calibrationLoadFromHDF5Simple(calinfo.cal_file)
-        rd.calibrated = True
+        make_calibration(calinfo, redo=redo, rms_cutoff=rms_cutoff)
+        load_calibration(rd, calinfo)
     else:
         print("Calibration already present")
 

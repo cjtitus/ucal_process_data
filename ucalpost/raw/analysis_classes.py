@@ -39,6 +39,10 @@ class RawData:
         self.refresh()
 
     @property
+    def calibrated(self):
+        return hasattr(self.data, "energy")
+    
+    @property
     def driftCorrected(self):
         return hasattr(self.data, "filtValueDC")
 
@@ -69,7 +73,6 @@ class CalibrationInfo(RawData):
 
         if cal_file_name is not None and path.exists(cal_file_name) and not redo:
             self.cal_file = cal_file_name
-            self.calibrated = True
         else:
             _calibrate(self.data, self.state, self.line_names, fv=attr, rms_cutoff=rms_cutoff)
             if cal_file_name is not None:
@@ -77,4 +80,4 @@ class CalibrationInfo(RawData):
                     os.makedirs(path.dirname(cal_file_name))
                 self.data.calibrationSaveToHDF5Simple(cal_file_name)
                 self.cal_file = cal_file_name
-            self.calibrated = True
+                
