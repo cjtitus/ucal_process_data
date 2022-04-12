@@ -1,7 +1,5 @@
 import mass
-
 import os
-from is import path
 import numpy as np
 
 from .calibration import summarize_calibration, make_calibration, load_calibration
