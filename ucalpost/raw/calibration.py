@@ -95,6 +95,8 @@ mass.off.Channel.learnCalibrationPlanFromEnergiesAndPeaks = ds_learnCalibrationP
 def data_calibrationLoadFromHDF5Simple(self, h5name):
     print(f"loading calibration from {h5name}")
     with h5py.File(h5name, "r") as h5:
+        nchans = len(list(h5.keys()))
+        print(f"Calibration for {nchans} channels found")
         for channum_str in h5.keys():
             cal = mass.calibration.EnergyCalibration.load_from_hdf5(h5, channum_str)
             channum = int(channum_str)
@@ -147,6 +149,7 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, as
     # ds.diagnoseCalibration()
     for ds in data.values():
         try:
+            print(f"Calibrating {ds.channum}")
             ds.learnCalibrationPlanFromEnergiesAndPeaks(attr=fv, ph_fwhm=50,
                                                         states=cal_state,
                                                         line_names=line_energies,
@@ -178,7 +181,7 @@ def make_calibration(calinfo, savedir=None, redo=False, rms_cutoff=0.2):
 
     if savedir is not None:
         savebase = "_".join(path.basename(calinfo.off_filename).split('_')[:-1])
-        savename = f"{savebase}_{self.state}_cal.hdf5"
+        savename = f"{savebase}_{calinfo.state}_cal.hdf5"
         cal_file_name = path.join(savedir, savename)
     else:
         cal_file_name = None
@@ -198,6 +201,7 @@ def make_calibration(calinfo, savedir=None, redo=False, rms_cutoff=0.2):
 
 def load_calibration(rd, calinfo):
     rd.data.calibrationLoadFromHDF5Simple(calinfo.cal_file)
+    rd.load_ds()
 
 
 def summarize_calibration(calinfo, redo=False):

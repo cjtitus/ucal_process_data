@@ -11,7 +11,6 @@ import h5py
 class RawData:
     def __init__(self, off_filename, state, savefile, data=None):
         self.off_filename = off_filename
-        self.calibrated = False
         self.attribute = "filtValueDC"
         self.state = state
         self.savefile = savefile
@@ -40,12 +39,17 @@ class RawData:
 
     @property
     def calibrated(self):
-        return hasattr(self.data, "energy")
+        try:
+            return hasattr(self.ds, "energy")
+        except:
+            return False
     
     @property
     def driftCorrected(self):
-        return hasattr(self.data, "filtValueDC")
-
+        try:
+            return hasattr(self.ds, "filtValueDC")
+        except:
+            return False
 
 class CalibrationInfo(RawData):
     def __init__(self, off_filename, state, savefile, savedir, line_names, **kwargs):
@@ -58,26 +62,3 @@ class CalibrationInfo(RawData):
         super().update(state, savefile)
         self.savedir = savedir
         self.line_names = line_names
-
-    def calibrate(self, savedir=None, redo=False, rms_cutoff=0.2):
-        attr = "filtValueDC" if self.driftCorrected else "filtValue"
-        if savedir is None:
-            savedir = self.savedir
-
-        if savedir is not None:
-            savebase = "_".join(path.basename(self.off_filename).split('_')[:-1])
-            savename = f"{savebase}_{self.state}_cal.hdf5"
-            cal_file_name = path.join(savedir, savename)
-        else:
-            cal_file_name = None
-
-        if cal_file_name is not None and path.exists(cal_file_name) and not redo:
-            self.cal_file = cal_file_name
-        else:
-            _calibrate(self.data, self.state, self.line_names, fv=attr, rms_cutoff=rms_cutoff)
-            if cal_file_name is not None:
-                if not path.exists(path.dirname(cal_file_name)):
-                    os.makedirs(path.dirname(cal_file_name))
-                self.data.calibrationSaveToHDF5Simple(cal_file_name)
-                self.cal_file = cal_file_name
-                
