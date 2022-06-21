@@ -1,9 +1,8 @@
 import mass
-
 import os
 import numpy as np
 
-from .calibration import summarize_calibration
+from .calibration import summarize_calibration, make_calibration, load_calibration
 
 
 # Understand how to intelligently re-drift-correct as data comes in
@@ -31,18 +30,15 @@ def calibrate(rd, calinfo, redo=False, rms_cutoff=2):
     calinfo : a CalibrationInfo object
     """
     if not rd.calibrated:
-        print("Calibrating")
-        calinfo.calibrate(redo=redo, rms_cutoff=rms_cutoff)
-        rd.data.calibrationLoadFromHDF5Simple(calinfo.cal_file)
-        rd.calibrated = True
+        print(f"Calibrating {rd.state}")
+        make_calibration(calinfo, redo=redo, rms_cutoff=rms_cutoff)
+        load_calibration(rd, calinfo)
     else:
         print("Calibration already present")
 
 
-def process(rd, calinfo, redo=False, rms_cutoff=2):
-    # cal transfer doesn't use dc anyway yet
-    # drift_correct(rd)
-    calibrate(rd, calinfo, redo=redo, rms_cutoff=2)
+def process(rd, calinfo, redo=False, rms_cutoff=0.2):
+    calibrate(rd, calinfo, redo=redo, rms_cutoff=rms_cutoff)
     summarize_calibration(calinfo, redo=redo)
 
 
@@ -65,6 +61,7 @@ def save_tes_arrays(rd, overwrite=False):
         except:
             print(f"{ds.channum} failed")
             ds.markBad("Failed to get energy")
+            continue
         ch = np.zeros_like(uns) + ds.channum
         timestamps.append(uns)
         energies.append(es)
