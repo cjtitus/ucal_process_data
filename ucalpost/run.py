@@ -90,7 +90,7 @@ def summarize_run(run):
     else:
         print(f"Scantype: {scantype}")
     if 'last_cal' in run.start:
-        print(f"Calibration: {run.start['last_cal'][:8]}")
+        print(f"Calibration: {run.start['last_cal']!s:.8}")
 
 #tes_runs = db.search(TimeRange(since="2022-01-26", until="2022-01-28"))
 #sample_runs = tes_runs.search({"sample_args": {"$exists": True}})
