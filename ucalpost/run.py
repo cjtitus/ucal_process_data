@@ -43,6 +43,14 @@ def get_raw_directory(run):
     return path.join(basename, f"{date.year}/{date.month:02d}/{date.day:02d}")
 
 
+def get_proposal_directory(run):
+    passid = run.start['proposal']
+    date = datetime.datetime.fromtimestamp(run.start.get('beamtime_start', run.start['time']))
+    cycle = run.start['cycle']
+    dirname = f"/nsls2/data/sst/legacy/ucal/proposals/{date.year}-{cycle}/pass-{passid}/ucal/{date.year}{date.month:02}{date.day:02}"
+    return dirname
+
+
 def get_tes_state(run):
     config = get_config_dict(run)
     if "tes_scan_str" in config:

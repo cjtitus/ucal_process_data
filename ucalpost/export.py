@@ -1,6 +1,15 @@
 from .process_classes import scandata_from_run
 from xastools.utils import roiMaster, roiDefaults
+from xastools.io import exportXASToYaml
+import os
+from os import path
+import datetime
+import numpy as np
+from functools import reduce
 
+def convert_names(name):
+    name_conversions = {"en_energy_setpoint": "MONO", "en_energy": "ENERGY_ENC", "ucal_I400_i0up": "I0", "ucal_I400_ref": "REF", "ucal_I400_sc": "SC", "tes_tfy": "tfy"}
+    return name_conversions.get(name, name)
 
 def get_run_header(run):
     metadata = {}
@@ -11,7 +20,7 @@ def get_run_header(run):
     scaninfo['date'] = datetime.datetime.fromtimestamp(run.start['time']).isoformat()
     scaninfo['command'] = run.start.get('command', run.start.get('plan_name', None))
     scaninfo['element'] = run.start.get('element', run.start.get('edge', None))
-    scaninfo['motor'] = run.start['motors'][0]
+    scaninfo['motor'] = convert_names(run.start['motors'][0])
     motors = {}
     motors['exslit'] = run.baseline.data['Exit Slit of Mono Vertical Gap'].data[0]
     motors['manipx'] = run.baseline.data['Manipulator_x'].data[0]
@@ -25,18 +34,18 @@ def get_run_header(run):
     motors['tesz'] = run.baseline.data['tesz'].data[0]
     metadata['scaninfo'] = scaninfo
     metadata['motors'] = motors
-    metadata['channelinfo'] = []
+    metadata['channelinfo'] = {}
     return metadata
 
 
 def get_run_data(run):
-    name_conversions = {"en_energy_setpoint": "MONO", "en_energy": "ENERGY_ENC", "ucal_I400_i0up": "I0", "ucal_I400_ref": "REF", "ucal_I400_sc": "SC", "tes_tfy": "testfy"}
-    natural_order = ["Seconds", "MONO", "ENERGY_ENC", "I0", "I1", "REF", "SC", "testfy"]
+    
+    natural_order = ["Seconds", "MONO", "ENERGY_ENC", "I0", "I1", "REF", "SC", "tfy"]
     exposure = float(run.primary.config['ucal_I400']['ucal_I400_exposure_sp'][0])
     columns = []
     datadict = {}
     for key in run.primary.data:
-        newkey = name_conversions.get(key, key)
+        newkey = convert_names(key)
         datadict[newkey] = run.primary.data[key].data
     if 'Seconds' not in datadict:
         datadict['Seconds'] = np.zeros_like(datadict[newkey]) + exposure
@@ -74,7 +83,7 @@ def get_data_and_header(run, infer_rois=True, rois=[], channels=None):
     _rois = {}
     if infer_rois:
         _rois['tfy'] = roiMaster['tfy']
-        e = header['scaninfo']['element']
+        e = header['scaninfo'].get('element', '').lower()
         if e in roiDefaults:
             for k in roiDefaults[e]:
                 _rois[k] = roiMaster[k]
@@ -91,10 +100,36 @@ def get_data_and_header(run, infer_rois=True, rois=[], channels=None):
         else:
             columns.append(k)
             run_data.append(tes_data[i])
-    data = np.vstack(run_data)
-    header['channelinfo']['columns'] = columns
+    data = np.vstack(run_data).T
+    header['channelinfo']['cols'] = columns
     header['channelinfo']['weights'] = {}
     header['channelinfo']['offsets'] = {}
     return data, header
 
 
+def get_xas_from_run(run, **kwargs):
+    data, header = get_data_and_header(run, **kwargs)
+    s = XAS.from_data_header(data, header)
+    return s
+
+
+def get_xas_from_catalog(catalog, combine=True, **kwargs):
+    xas_list = []
+    for uid, run in catalog.items():
+        xas_list.append(get_xas_from_run(run, **kwargs))
+    if combine:
+        return reduce(lambda x, y: x + y, xas_list)
+    else:
+        return xas_list
+
+def export_run(run, folder=None, data_kwargs={}, export_kwargs={}):
+    if folder is None:
+        folder = get_proposal_directory(run)
+    if not path.exists(folder):
+        os.makedirs(folder)
+    xas = get_xas_from_run(run, **data_kwargs)
+    exportXASToYaml(xas, folder, **export_kwargs)
+
+def export_catalog(catalog, **kwargs):
+    for _, run in catalog.items():
+        export_run(run, **kwargs)
