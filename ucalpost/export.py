@@ -1,6 +1,8 @@
 from .process_classes import scandata_from_run
 from xastools.utils import roiMaster, roiDefaults
 from xastools.io import exportXASToYaml
+from xastools.xas import XAS
+from .run import get_proposal_directory
 import os
 from os import path
 import datetime
@@ -126,6 +128,7 @@ def export_run(run, folder=None, data_kwargs={}, export_kwargs={}):
     if folder is None:
         folder = get_proposal_directory(run)
     if not path.exists(folder):
+        print(f"Making {folder}")
         os.makedirs(folder)
     xas = get_xas_from_run(run, **data_kwargs)
     exportXASToYaml(xas, folder, **export_kwargs)

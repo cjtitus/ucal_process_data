@@ -2,6 +2,17 @@ from databroker.queries import TimeRange, FullText, PartialUID, RawMongo
 from .run import summarize_run
 
 
+def filter_catalog(catalog, stop=True, sample=None, group=None, scantype=None):
+    if stop:
+        catalog = filter_by_stop(catalog)
+    if sample is not None:
+        catalog = filter_by_sample(catalog, sample)
+    if group is not None:
+        catalog = filter_by_group(catalog, group)
+    if scantype is not None:
+        catalog = filter_by_scantype(catalog, scantype)
+    return catalog
+
 def filter_by_stop(catalog):
     ok_uuids = []
     for n in range(len(catalog)):
@@ -20,6 +31,10 @@ def filter_by_sample(catalog, samplename):
 
 def filter_by_group(catalog, groupname):
     return catalog.search({"group": groupname})
+
+
+def filter_by_scantype(catalog, scantype):
+    return catalog.search({"scantype": scantype})
 
 
 def list_groups(catalog):
