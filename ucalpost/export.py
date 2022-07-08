@@ -13,6 +13,13 @@ def convert_names(name):
     name_conversions = {"en_energy_setpoint": "MONO", "en_energy": "ENERGY_ENC", "ucal_I400_i0up": "I0", "ucal_I400_ref": "REF", "ucal_I400_sc": "SC", "tes_tfy": "tfy"}
     return name_conversions.get(name, name)
 
+
+def get_with_fallbacks(thing, *possible_names, default=None):
+    for name in possible_names:
+        if name in thing:
+            return thing[name]
+    return default
+
 def get_run_header(run):
     metadata = {}
     scaninfo = {}
@@ -20,20 +27,21 @@ def get_run_header(run):
     scaninfo['loadid'] = run.start['sample_args']['sample_id']['value']
     scaninfo['scan'] = run.start['scan_id']
     scaninfo['date'] = datetime.datetime.fromtimestamp(run.start['time']).isoformat()
-    scaninfo['command'] = run.start.get('command', run.start.get('plan_name', None))
-    scaninfo['element'] = run.start.get('element', run.start.get('edge', None))
+    scaninfo['command'] = get_with_fallbacks(run.start, 'command', 'plan_name', default=None)
+    scaninfo['element'] = get_with_fallbacks(run.start, 'element', 'edge', default=None)
     scaninfo['motor'] = convert_names(run.start['motors'][0])
     motors = {}
-    motors['exslit'] = run.baseline.data['Exit Slit of Mono Vertical Gap'].data[0]
-    motors['manipx'] = run.baseline.data['Manipulator_x'].data[0]
-    motors['manipy'] = run.baseline.data['Manipulator_y'].data[0]
-    motors['manipz'] = run.baseline.data['Manipulator_z'].data[0]
-    motors['manipr'] = run.baseline.data['Manipulator_r'].data[0]
-    motors['samplex'] = run.baseline.data['Manipulator_sx'].data[0]
-    motors['sampley'] = run.baseline.data['Manipulator_sy'].data[0]
-    motors['samplez'] = run.baseline.data['Manipulator_sz'].data[0]
-    motors['sampler'] = run.baseline.data['Manipulator_sr'].data[0]
-    motors['tesz'] = run.baseline.data['tesz'].data[0]
+    baseline = run.baseline.data
+    motors['exslit'] = get_with_fallbacks(baseline, 'Exit Slit of Mono Vertical Gap').data[0]
+    motors['manipx'] = get_with_fallbacks(baseline, 'manip_x', 'Manipulator_x').data[0]
+    motors['manipy'] = get_with_fallbacks(baseline, 'manip_y', 'Manipulator_y').data[0]
+    motors['manipz'] = get_with_fallbacks(baseline, 'manip_z', 'Manipulator_z').data[0]
+    motors['manipr'] = get_with_fallbacks(baseline, 'manip_r', 'Manipulator_r').data[0]
+    motors['samplex'] = get_with_fallbacks(baseline, 'manip_sx', 'Manipulator_sx').data[0]
+    motors['sampley'] = get_with_fallbacks(baseline, 'manip_sy', 'Manipulator_sy').data[0]
+    motors['samplez'] = get_with_fallbacks(baseline, 'manip_sz', 'Manipulator_sz').data[0]
+    motors['sampler'] = get_with_fallbacks(baseline, 'manip_sr', 'Manipulator_sr').data[0]
+    motors['tesz'] = get_with_fallbacks(baseline, 'tesz').data[0]
     metadata['scaninfo'] = scaninfo
     metadata['motors'] = motors
     metadata['channelinfo'] = {}

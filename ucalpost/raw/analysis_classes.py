@@ -16,6 +16,7 @@ class RawData:
         self.savefile = savefile
         self.load_data(data)
         self.load_ds()
+        self._calibrated = False
 
     def load_data(self, data=None):
         if data is None:
@@ -40,7 +41,7 @@ class RawData:
     @property
     def calibrated(self):
         try:
-            return hasattr(self.ds, "energy")
+            return hasattr(self.ds, "energy") and self._calibrated
         except:
             return False
     
@@ -53,12 +54,30 @@ class RawData:
 
 class CalibrationInfo(RawData):
     def __init__(self, off_filename, state, savefile, savedir, line_names, **kwargs):
+        super().__init__(off_filename, state, savefile, **kwargs)
         self.line_names = line_names
         self.cal_file = None
         self.savedir = savedir
-        super().__init__(off_filename, state, savefile, **kwargs)
+        self.update_calibration()
 
     def update(self, state, savefile, savedir, line_names):
         super().update(state, savefile)
         self.savedir = savedir
         self.line_names = line_names
+        self.update_calibration()
+        
+    def update_calibration(self, savedir=None):
+        if savedir is None:
+            savedir = self.savedir
+        else:
+            self.savedir = savedir
+        if savedir is not None:
+            savebase = "_".join(path.basename(self.off_filename).split('_')[:-1])
+            savename = f"{savebase}_{self.state}_cal.hdf5"
+            new_cal_file = path.join(savedir, savename)
+            if new_cal_file != self.cal_file:
+                self.cal_file = new_cal_file
+                self._calibrated = False
+        else:
+            self.cal_file = None
+            self._calibrated = False

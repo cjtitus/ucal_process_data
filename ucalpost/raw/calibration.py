@@ -176,20 +176,13 @@ def make_calibration(calinfo, savedir=None, redo=False, rms_cutoff=0.2):
     # UUUUUUUUUGH need to make all the names make sense, maybe move this to
     # calibration file, obviously rename, since _calibrate is already a function
     attr = "filtValueDC" if calinfo.driftCorrected else "filtValue"
-    if savedir is None:
-        savedir = calinfo.savedir
 
-    if savedir is not None:
-        savebase = "_".join(path.basename(calinfo.off_filename).split('_')[:-1])
-        savename = f"{savebase}_{calinfo.state}_cal.hdf5"
-        cal_file_name = path.join(savedir, savename)
-    else:
-        cal_file_name = None
-
+    cal_file_name = calinfo.cal_file
     if cal_file_name is not None and path.exists(cal_file_name) and not redo:
-        calinfo.cal_file = cal_file_name
+        pass
     else:
         _calibrate(calinfo.data, calinfo.state, calinfo.line_names, fv=attr, rms_cutoff=rms_cutoff)
+        calinfo._calibrated = True
         if cal_file_name is not None:
             if not path.exists(path.dirname(cal_file_name)):
                 os.makedirs(path.dirname(cal_file_name))
@@ -202,7 +195,7 @@ def make_calibration(calinfo, savedir=None, redo=False, rms_cutoff=0.2):
 def load_calibration(rd, calinfo):
     rd.data.calibrationLoadFromHDF5Simple(calinfo.cal_file)
     rd.load_ds()
-
+    rd._calibrated = True
 
 def summarize_calibration(calinfo, redo=False):
     savedir = calinfo.savefile[:-4] + '_summary'

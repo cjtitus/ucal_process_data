@@ -29,17 +29,18 @@ def calibrate(rd, calinfo, redo=False, rms_cutoff=2):
     rd : A RawData object
     calinfo : a CalibrationInfo object
     """
-    if not rd.calibrated:
+    if not calinfo.calibrated:
         print(f"Calibrating {rd.state}")
         make_calibration(calinfo, redo=redo, rms_cutoff=rms_cutoff)
         load_calibration(rd, calinfo)
+        summarize_calibration(calinfo, redo=redo)
     else:
         print("Calibration already present")
 
 
 def process(rd, calinfo, redo=False, rms_cutoff=0.2):
     calibrate(rd, calinfo, redo=redo, rms_cutoff=rms_cutoff)
-    summarize_calibration(calinfo, redo=redo)
+
 
 
 def save_tes_arrays(rd, overwrite=False):

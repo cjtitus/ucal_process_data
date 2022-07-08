@@ -13,7 +13,7 @@ def get_config_dict(run):
 def get_filename(run, convert_local=True):
     filename = get_config_dict(run)['tes_filename']
     if convert_local:
-        raw_directory = get_raw_directory(run)
+        raw_directory = get_raw_directory(filename)
         a, name = path.split(filename)
         _, runNumber = path.split(a)
         filename = path.join(raw_directory, runNumber, name)
@@ -36,11 +36,13 @@ def get_save_directory(run):
     return path.join(basename, f"{date.year}/{date.month:02d}/{date.day:02d}")
 
 
-def get_raw_directory(run):
+def get_raw_directory(filename):
+    date = path.basename(filename).split('_')[0]
+    year = date[:4]
+    month = date[4:6]
+    day = date[6:]
     basename = "/nsls2/data/sst/legacy/ucal/raw"
-    timestamp = run.metadata['start']['time']
-    date = datetime.datetime.fromtimestamp(timestamp)
-    return path.join(basename, f"{date.year}/{date.month:02d}/{date.day:02d}")
+    return path.join(basename, f"{year}/{month}/{day}")
 
 
 def get_proposal_directory(run):

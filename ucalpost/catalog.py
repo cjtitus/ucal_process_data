@@ -1,8 +1,14 @@
-from databroker.queries import TimeRange, FullText, PartialUID, RawMongo
+from databroker.queries import TimeRange, FullText, PartialUID, In, Key
 from .run import summarize_run
+import collections
 
+def iterfy(x):
+    if not isinstance(x, str) and isinstance(x, collections.abc.Iterable):
+        return x
+    else:
+        return [x]
 
-def filter_catalog(catalog, stop=True, sample=None, group=None, scantype=None):
+def filter_catalog(catalog, stop=True, sample=None, group=None, scantype=None, edge=None):
     if stop:
         catalog = filter_by_stop(catalog)
     if sample is not None:
@@ -11,6 +17,8 @@ def filter_catalog(catalog, stop=True, sample=None, group=None, scantype=None):
         catalog = filter_by_group(catalog, group)
     if scantype is not None:
         catalog = filter_by_scantype(catalog, scantype)
+    if edge is not None:
+        catalog = filter_by_edge(catalog, edge)
     return catalog
 
 def filter_by_stop(catalog):
@@ -26,15 +34,19 @@ def filter_by_stop(catalog):
 
 
 def filter_by_sample(catalog, samplename):
-    return catalog.search({"sample_args.sample_name.value": samplename})
+    return catalog.search(In("sample_args.sample_name.value", iterfy(samplename)))
 
 
 def filter_by_group(catalog, groupname):
-    return catalog.search({"group": groupname})
+    return catalog.search(In("group", iterfy(groupname)))
 
 
 def filter_by_scantype(catalog, scantype):
-    return catalog.search({"scantype": scantype})
+    return catalog.search(In("scantype", iterfy(scantype)))
+
+
+def filter_by_edge(catalog, edge):
+    return catalog.search(In("edge", iterfy(edge)))
 
 
 def list_groups(catalog):
