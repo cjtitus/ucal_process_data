@@ -30,6 +30,14 @@ def get_run_header(run):
     scaninfo['command'] = get_with_fallbacks(run.start, 'command', 'plan_name', default=None)
     scaninfo['element'] = get_with_fallbacks(run.start, 'element', 'edge', default=None)
     scaninfo['motor'] = convert_names(run.start['motors'][0])
+    scankeys = ['time', 'users', 'proposal', 'cycle', 'saf', 'group']
+    for k in scankeys:
+        if k in run.start:
+            scaninfo[k] = run.start[k]
+    if 'ref_args' in run.start:
+        scaninfo['ref_edge'] = run.start['ref_args']['i0up_multimesh_sample_sample_name']['value']
+        scaninfo['ref_id'] = run.start['ref_args']['i0up_multimesh_sample_sample_id']['value']
+    scaninfo['raw_uid'] = run.start['uid']
     motors = {}
     baseline = run.baseline.data
     motors['exslit'] = get_with_fallbacks(baseline, 'Exit Slit of Mono Vertical Gap').data[0]
