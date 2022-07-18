@@ -86,3 +86,28 @@ def summarize_catalog(catalog):
         print("-------------")
         print(f"uid: {uid[:9]}...")
         summarize_run(run)
+
+
+def get_subcatalogs(catalog, groups=True, samples=True, edges=True):
+    return _get_subcatalogs(catalog, groups=groups, samples=samples,
+                            edges=edges)
+
+
+def _get_subcatalogs(catalog, **kwargs):
+    subcatalogs = []
+    if kwargs.pop('groups', False):
+        for g in list_groups(catalog):
+            group_catalog = filter_by_group(catalog, g)
+            subcatalogs += _get_subcatalogs(group_catalog, **kwargs)
+        return subcatalogs
+    if kwargs.pop('samples', False):
+        for s in list_samples(catalog):
+            sample_catalog = filter_by_sample(catalog, s)
+            subcatalogs += _get_subcatalogs(sample_catalog, **kwargs)
+        return subcatalogs
+    if kwargs.pop('edges', False):
+        for e in list_edges(catalog):
+            edge_catalog = filter_by_edge(catalog, e)
+            subcatalogs += _get_subcatalogs(edge_catalog, **kwargs)
+        return subcatalogs
+    return [catalog]

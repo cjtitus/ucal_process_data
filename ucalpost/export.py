@@ -57,7 +57,7 @@ def get_run_header(run):
 
 
 def get_run_data(run):
-    
+
     natural_order = ["Seconds", "MONO", "ENERGY_ENC", "I0", "I1", "REF", "SC", "tfy"]
     exposure = float(run.primary.config['ucal_I400']['ucal_I400_exposure_sp'][0])
     columns = []
@@ -140,6 +140,7 @@ def get_xas_from_catalog(catalog, combine=True, **kwargs):
     else:
         return xas_list
 
+
 def export_run(run, folder=None, data_kwargs={}, export_kwargs={}):
     if folder is None:
         folder = get_proposal_directory(run)
@@ -148,6 +149,7 @@ def export_run(run, folder=None, data_kwargs={}, export_kwargs={}):
         os.makedirs(folder)
     xas = get_xas_from_run(run, **data_kwargs)
     exportXASToYaml(xas, folder, **export_kwargs)
+
 
 def export_catalog(catalog, **kwargs):
     for _, run in catalog.items():
