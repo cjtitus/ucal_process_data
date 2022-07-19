@@ -46,9 +46,9 @@ def get_raw_directory(filename):
 
 
 def get_proposal_directory(run):
-    passid = run.start['proposal']
-    date = datetime.datetime.fromtimestamp(run.start.get('beamtime_start', run.start['time']))
-    cycle = run.start['cycle']
+    passid = run.metadata['start']['proposal']
+    date = datetime.datetime.fromtimestamp(run.metadata['start'].get('beamtime_start', run.metadata['start']['time']))
+    cycle = run.metadata['start']['cycle']
     dirname = f"/nsls2/data/sst/legacy/ucal/proposals/{date.year}-{cycle}/pass-{passid}/ucal/{date.year}{date.month:02}{date.day:02}"
     return dirname
 

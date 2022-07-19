@@ -9,6 +9,7 @@ import datetime
 import numpy as np
 from functools import reduce
 
+ANALYSIS_CATALOG = None
 
 def convert_names(name):
     name_conversions = {"en_energy_setpoint": "MONO", "en_energy": "ENERGY_ENC", "ucal_I400_i0up": "I0", "ucal_I400_ref": "REF", "ucal_I400_sc": "SC", "tes_tfy": "tfy"}
@@ -132,8 +133,11 @@ def get_data_and_header(run, infer_rois=True, rois=[], channels=None):
 
 
 def get_xas_from_run(run, **kwargs):
-    data, header = get_data_and_header(run, **kwargs)
-    s = XAS.from_data_header(data, header)
+    if hasattr(run, 'to_xas'):
+        s = run.to_xas()
+    else:
+        data, header = get_data_and_header(run, **kwargs)
+        s = XAS.from_data_header(data, header)
     return s
 
 
@@ -147,7 +151,7 @@ def get_xas_from_catalog(catalog, combine=True, **kwargs):
         return xas_list
 
 
-def export_run(run, folder=None, data_kwargs={}, export_kwargs={}, namefmt="{sample}_{element}_{scan}"):
+def export_run_to_yaml(run, folder=None, data_kwargs={}, export_kwargs={}, namefmt="{sample}_{element}_{scan}"):
     if folder is None:
         folder = get_proposal_directory(run)
     if not path.exists(folder):
@@ -157,6 +161,21 @@ def export_run(run, folder=None, data_kwargs={}, export_kwargs={}, namefmt="{sam
     exportXASToYaml(xas, folder, namefmt=namefmt, **export_kwargs)
 
 
-def export_catalog(catalog, **kwargs):
+def export_catalog_to_yaml(catalog, **kwargs):
     for _, run in catalog.items():
-        export_run(run, **kwargs)
+        export_run_to_yaml(run, **kwargs)
+
+
+def export_run_to_analysis_catalog(run, infer_rois=True, rois=[], channels=None):
+    if ANALYSIS_CATALOG is None:
+        from tiled.client import from_profile
+        c = from_profile('nsls2')['ucal']['sandbox']
+        ANALYSIS_CATALOG = c
+    data, header = get_data_and_header(run, infer_rois=infer_rois, rois=rois, channels=channels)
+    new_uid = ANALYSIS_CATALOG.write_array(data, metadata=header, specs='nistxas')
+    return new_uid
+
+
+def export_catalog_to_analysis_catalog(catalog, **kwargs):
+    for _, run in catalog.items():
+        export_run_to_analysis_catalog(run, **kwargs)
