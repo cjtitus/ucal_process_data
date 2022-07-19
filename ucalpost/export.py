@@ -133,14 +133,14 @@ def get_xas_from_catalog(catalog, combine=True, **kwargs):
         return xas_list
 
 
-def export_run(run, folder=None, data_kwargs={}, export_kwargs={}):
+def export_run(run, folder=None, data_kwargs={}, export_kwargs={}, namefmt="{sample}_{element}_{scan}"):
     if folder is None:
         folder = get_proposal_directory(run)
     if not path.exists(folder):
         print(f"Making {folder}")
         os.makedirs(folder)
     xas = get_xas_from_run(run, **data_kwargs)
-    exportXASToYaml(xas, folder, **export_kwargs)
+    exportXASToYaml(xas, folder, namefmt=namefmt, **export_kwargs)
 
 
 def export_catalog(catalog, **kwargs):

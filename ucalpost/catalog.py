@@ -34,21 +34,29 @@ def filter_by_stop(catalog):
 
 
 def filter_by_sample(catalog, samplename):
-    return catalog.search(In("sample_args.sample_name.value", iterfy(samplename)))
+    return filter_by_key(catalog, "sample_args.sample_name.value", samplename)
 
 
 def filter_by_group(catalog, groupname):
-    return catalog.search(In("group", iterfy(groupname)))
+    return filter_by_key(catalog, "group", groupname)
 
 
 def filter_by_scantype(catalog, scantype):
-    return catalog.search(In("scantype", iterfy(scantype)))
+    return filter_by_key(catalog, "scantype", scantype)
 
 
 def filter_by_edge(catalog, edge):
-    return catalog.search(In("edge", iterfy(edge)))
+    return filter_by_key(catalog, "edge", edge)
 
 
+def filter_by_noise(catalog, noise):
+    return filter_by_key(catalog, "last_noise", noise)
+
+
+def filter_by_key(catalog, key, values):
+    return catalog.search(In(key, iterfy(values)))
+
+    
 def list_groups(catalog):
     return list_start_key_vals(catalog, "group")
 
@@ -59,6 +67,10 @@ def list_samples(catalog):
 
 def list_edges(catalog):
     return list_start_key_vals(catalog, "edge")
+
+
+def list_noise(catalog):
+    return list_start_key_vals(catalog, "last_noise")
 
 
 def list_start_key_vals(catalog, *keys):
@@ -88,13 +100,22 @@ def summarize_catalog(catalog):
         summarize_run(run)
 
 
-def get_subcatalogs(catalog, groups=True, samples=True, edges=True):
-    return _get_subcatalogs(catalog, groups=groups, samples=samples,
+def get_noise_catalogs(catalog):
+    return _get_subcatalogs(catalog, noise=True)
+
+
+def get_subcatalogs(catalog, noise=True, groups=True, samples=True, edges=True):
+    return _get_subcatalogs(catalog, noise=noise, groups=groups, samples=samples,
                             edges=edges)
 
 
 def _get_subcatalogs(catalog, **kwargs):
     subcatalogs = []
+    if kwargs.pop('noise', False):
+        for g in list_noise(catalog):
+            noise_catalog = filter_by_noise(catalog, g)
+            subcatalogs += _get_subcatalogs(noise_catalog, **kwargs)
+        return subcatalogs
     if kwargs.pop('groups', False):
         for g in list_groups(catalog):
             group_catalog = filter_by_group(catalog, g)
