@@ -9,6 +9,7 @@ import datetime
 import numpy as np
 from functools import reduce
 
+
 def convert_names(name):
     name_conversions = {"en_energy_setpoint": "MONO", "en_energy": "ENERGY_ENC", "ucal_I400_i0up": "I0", "ucal_I400_ref": "REF", "ucal_I400_sc": "SC", "tes_tfy": "tfy"}
     return name_conversions.get(name, name)
@@ -20,6 +21,7 @@ def get_with_fallbacks(thing, *possible_names, default=None):
             return thing[name]
     return default
 
+
 def get_run_header(run):
     metadata = {}
     scaninfo = {}
@@ -30,6 +32,14 @@ def get_run_header(run):
     scaninfo['command'] = get_with_fallbacks(run.start, 'command', 'plan_name', default=None)
     scaninfo['element'] = get_with_fallbacks(run.start, 'element', 'edge', default=None)
     scaninfo['motor'] = convert_names(run.start['motors'][0])
+    scankeys = ['time', 'users', 'proposal', 'cycle', 'saf', 'group']
+    for k in scankeys:
+        if k in run.start:
+            scaninfo[k] = run.start[k]
+    if 'ref_args' in run.start:
+        scaninfo['ref_edge'] = run.start['ref_args']['i0up_multimesh_sample_sample_name']['value']
+        scaninfo['ref_id'] = run.start['ref_args']['i0up_multimesh_sample_sample_id']['value']
+    scaninfo['raw_uid'] = run.start['uid']
     motors = {}
     baseline = run.baseline.data
     motors['exslit'] = get_with_fallbacks(baseline, 'Exit Slit of Mono Vertical Gap').data[0]
@@ -50,7 +60,8 @@ def get_run_header(run):
 
 def get_run_data(run):
 
-    natural_order = ["Seconds", "MONO", "ENERGY_ENC", "I0", "I1", "REF", "SC", "tfy"]
+    natural_order = ["Seconds", "MONO", "ENERGY_ENC", "I0", "I1", "REF", "SC",
+                     "tfy"]
     exposure = float(run.primary.config['ucal_I400']['ucal_I400_exposure_sp'][0])
     columns = []
     datadict = {}
@@ -114,6 +125,9 @@ def get_data_and_header(run, infer_rois=True, rois=[], channels=None):
     header['channelinfo']['cols'] = columns
     header['channelinfo']['weights'] = {}
     header['channelinfo']['offsets'] = {}
+    header['channelinfo']['rois'] = {}
+    for key, roi in _rois.items():
+        header['channelinfo']['rois'][key] = roi
     return data, header
 
 
