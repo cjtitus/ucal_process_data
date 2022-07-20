@@ -44,13 +44,14 @@ class RawData:
             return hasattr(self.ds, "energy") and self._calibrated
         except:
             return False
-    
+
     @property
     def driftCorrected(self):
         try:
             return hasattr(self.ds, "filtValueDC")
         except:
             return False
+
 
 class CalibrationInfo(RawData):
     def __init__(self, off_filename, state, savefile, savedir, line_names, **kwargs):
@@ -65,7 +66,7 @@ class CalibrationInfo(RawData):
         self.savedir = savedir
         self.line_names = line_names
         self.update_calibration()
-        
+
     def update_calibration(self, savedir=None):
         if savedir is None:
             savedir = self.savedir

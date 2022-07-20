@@ -9,6 +9,10 @@ import datetime
 import numpy as np
 from functools import reduce
 
+"""
+Module to export processed data to analysis catalog
+"""
+
 ANALYSIS_CATALOG = None
 
 def convert_names(name):
@@ -132,50 +136,14 @@ def get_data_and_header(run, infer_rois=True, rois=[], channels=None):
     return data, header
 
 
-def get_xas_from_run(run, **kwargs):
-    if hasattr(run, 'to_xas'):
-        s = run.to_xas()
-    else:
-        data, header = get_data_and_header(run, **kwargs)
-        s = XAS.from_data_header(data, header)
-    return s
-
-
-def get_xas_from_catalog(catalog, combine=True, **kwargs):
-    xas_list = []
-    for uid, run in catalog.items():
-        xas_list.append(get_xas_from_run(run, **kwargs))
-    if combine:
-        return reduce(lambda x, y: x + y, xas_list)
-    else:
-        return xas_list
-
-
-def export_run_to_yaml(run, folder=None, data_kwargs={}, export_kwargs={}, namefmt="{sample}_{element}_{scan}"):
-    if folder is None:
-        folder = get_proposal_directory(run)
-    if not path.exists(folder):
-        print(f"Making {folder}")
-        os.makedirs(folder)
-    xas = get_xas_from_run(run, **data_kwargs)
-    exportXASToYaml(xas, folder, namefmt=namefmt, **export_kwargs)
-
-
-def export_catalog_to_yaml(catalog, **kwargs):
-    for _, run in catalog.items():
-        export_run_to_yaml(run, **kwargs)
-
-
 def export_run_to_analysis_catalog(run, infer_rois=True, rois=[], channels=None):
+    global ANALYSIS_CATALOG
     if ANALYSIS_CATALOG is None:
         from tiled.client import from_profile
         c = from_profile('nsls2')['ucal']['sandbox']
         ANALYSIS_CATALOG = c
-    data, header = get_data_and_header(run, infer_rois=infer_rois, rois=rois, channels=channels)
-    new_uid = ANALYSIS_CATALOG.write_array(data, metadata=header, specs='nistxas')
+    data, header = get_data_and_header(run, infer_rois=infer_rois, rois=rois,
+                                       channels=channels)
+    new_uid = ANALYSIS_CATALOG.write_array(data, metadata=header,
+                                           specs='nistxas')
     return new_uid
-
-
-def export_catalog_to_analysis_catalog(catalog, **kwargs):
-    for _, run in catalog.items():
-        export_run_to_analysis_catalog(run, **kwargs)
