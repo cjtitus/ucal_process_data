@@ -7,10 +7,10 @@ from ..tools.catalog import WrappedCatalogBase
 
 class WrappedDatabroker(WrappedCatalogBase):
     KEY_MAP = {"samples": "sample_args.sample_name.value", "groups": "group",
-               "edges": "edge", "noise": "last_noise"}
+               "edges": "edge", "noise": "last_noise", "scantype": "scantype", "proposal": "proposal"}
 
-    def __init__(self, catalog, prefilter=True):
-        self.super().__init__(catalog)
+    def __init__(self, catalog, prefilter=False):
+        super().__init__(catalog)
         if prefilter:
             self._catalog = self._filter_by_stop()
 
@@ -46,14 +46,14 @@ class WrappedDatabroker(WrappedCatalogBase):
                 vals.add(s)
         return vals
 
-    def filter(self, stop=True, sample=None, group=None, scantype=None, edge=None):
+    def filter(self, stop=False, samples=None, groups=None, scantype=None, edges=None):
         if stop:
             catalog = self.filter_by_stop()
-            return catalog.filter(stop=False, sample=sample, group=group,
-                                  scantype=scantype, edge=edge)
+            return catalog.filter(stop=False, samples=samples, groups=groups,
+                                  scantype=scantype, edges=edges)
         else:
-            return self.super().filter(sample=sample, group=group,
-                                       scantype=scantype, edge=edge)
+            return super().filter(samples=samples, groups=groups,
+                                       scantype=scantype, edges=edges)
 
     def get_noise_catalogs(self):
         return self._get_subcatalogs(noise=True)
@@ -73,6 +73,7 @@ class WrappedDatabroker(WrappedCatalogBase):
 
     def export_to_analysis(self, **kwargs):
         for _, run in self._catalog.items():
+            print(f"Exporting run {run.metadata['start']['scan_id']}")
             export_run_to_analysis_catalog(run, **kwargs)
 
     def process_tes(self):

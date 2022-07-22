@@ -1,13 +1,6 @@
 from databroker.queries import TimeRange, In, Key
 from abc import ABC, abstractmethod
-import collections
-
-
-def iterfy(x):
-    if not isinstance(x, str) and isinstance(x, collections.abc.Iterable):
-        return x
-    else:
-        return [x]
+from .utils import iterfy
 
 
 class WrappedCatalogBase(ABC):
@@ -40,7 +33,7 @@ class WrappedCatalogBase(ABC):
     @classmethod
     def _make_list_function(cls, list_key, catalog_key):
         def _inner(self):
-            return self.list_meta_key_vals(self, catalog_key)
+            return self.list_meta_key_vals(catalog_key)
         fname = cls._list_function_name(list_key)
         _inner.__name__ = fname
         setattr(cls, fname, _inner)
@@ -52,8 +45,12 @@ class WrappedCatalogBase(ABC):
             self.__class__._make_filter_function(function_key, catalog_key)
             self.__class__._make_list_function(function_key, catalog_key)
 
+
+    def search(self, expr):
+        return self.__class__(self._catalog.search(expr))
+    
     def filter_by_key(self, key, values):
-        return self.__class__(self._catalog.search(In(key, iterfy(values))))
+        return self.search(In(key, iterfy(values)))
 
     def _get_subcatalogs(self, **kwargs):
         subcatalogs = []
@@ -68,15 +65,15 @@ class WrappedCatalogBase(ABC):
         return [self]
 
     def get_subcatalogs(self, **kwargs):
-        defaults = {k: True for k in KEY_MAP}
+        defaults = {k: True for k in self.KEY_MAP}
         defaults.update(kwargs)
         return self._get_subcatalogs(**defaults)
 
     def filter(self, **kwargs):
-        for k in KEY_MAP:
+        for k in self.KEY_MAP:
             val = kwargs.pop(k, None)
             if val is not None:
-                filter_function = getattr(self, self.__class__.filter_function_name(k))
+                filter_function = getattr(self, self.__class__._filter_function_name(k))
                 catalog = filter_function(val)
                 return catalog.filter(**kwargs)
         return self

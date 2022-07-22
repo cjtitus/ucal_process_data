@@ -1,13 +1,16 @@
-from .process_classes import scandata_from_run
+from ..tes.process_classes import scandata_from_run
 from xastools.utils import roiMaster, roiDefaults
 from xastools.io import exportXASToYaml
 from xastools.xas import XAS
 from .run import get_proposal_directory
 import os
+from tiled.queries import Key
 from os import path
 import datetime
 import numpy as np
 from functools import reduce
+from httpx import HTTPStatusError
+from time import sleep
 
 """
 Module to export processed data to analysis catalog
@@ -136,14 +139,27 @@ def get_data_and_header(run, infer_rois=True, rois=[], channels=None):
     return data, header
 
 
-def export_run_to_analysis_catalog(run, infer_rois=True, rois=[], channels=None):
+def export_run_to_analysis_catalog(run, infer_rois=True, rois=[], channels=None, check_existing=True):
     global ANALYSIS_CATALOG
     if ANALYSIS_CATALOG is None:
         from tiled.client import from_profile
         c = from_profile('nsls2')['ucal']['sandbox']
         ANALYSIS_CATALOG = c
+    if check_existing:
+        uid = run.metadata['start']['uid']
+        if len(ANALYSIS_CATALOG.search(Key("scaninfo.raw_uid") == uid)) > 0:
+            print("Data associated with this run is already in the catalog")
+            return
+        
     data, header = get_data_and_header(run, infer_rois=infer_rois, rois=rois,
                                        channels=channels)
-    new_uid = ANALYSIS_CATALOG.write_array(data, metadata=header,
-                                           specs='nistxas')
+
+    try:
+        new_uid = ANALYSIS_CATALOG.write_array(data, metadata=header,
+                                               specs=['nistxas'])
+    except HTTPStatusError:
+        print("Got an HTTP Error, will sleep and retry")
+        time.sleep(1)
+        new_uid = ANALYSIS_CATALOG.write_array(data, metadata=header,
+                                               specs=['nistxas'])
     return new_uid
