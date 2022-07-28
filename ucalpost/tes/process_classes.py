@@ -126,7 +126,7 @@ def log_from_json(logname):
 
 
 def log_from_run(run):
-    start_time = run.primary['timestamps']['tes_tfy']
+    start_time = run.primary['timestamps']['tes_tfy'].read()
     acquire_time = run.primary.descriptors[0]['configuration']['tes']['data']['tes_acquire_time']
     stop_time = start_time + acquire_time
     if run.metadata['start']['scantype'] in ['calibration', 'xes']:
