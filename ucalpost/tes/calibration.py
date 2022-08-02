@@ -196,6 +196,8 @@ def load_calibration(rd, calinfo):
     rd.data.calibrationLoadFromHDF5Simple(calinfo.cal_file)
     rd.load_ds()
     rd._calibrated = True
+    rd._calmd = {"cal_state": calinfo.state, "cal_file": calinfo.cal_file}
+
 
 def summarize_calibration(calinfo, redo=False):
     savedir = calinfo.savefile[:-4] + '_summary'

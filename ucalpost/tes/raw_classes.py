@@ -17,6 +17,7 @@ class RawData:
         self.load_data(data)
         self.load_ds()
         self._calibrated = False
+        self._calmd = {}
 
     def load_data(self, data=None):
         if data is None:
@@ -37,6 +38,11 @@ class RawData:
         self.state = state
         self.savefile = savefile
         self.refresh()
+
+    def getProcessMd(self):
+        md = {"driftCorrected": self.driftCorrected,
+              "calibration": self._calmd}
+        return md
 
     @property
     def calibrated(self):

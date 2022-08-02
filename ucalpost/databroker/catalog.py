@@ -1,13 +1,16 @@
 from .run import summarize_run, db
 from ..tes.process_routines import process_catalog
+from ..tes.process_routines import is_run_processed
 from .export import export_run_to_analysis_catalog
 from databroker.queries import PartialUID
 from ..tools.catalog import WrappedCatalogBase
+import datetime
 
 
 class WrappedDatabroker(WrappedCatalogBase):
     KEY_MAP = {"samples": "sample_args.sample_name.value", "groups": "group",
-               "edges": "edge", "noise": "last_noise", "scantype": "scantype", "proposal": "proposal"}
+               "edges": "edge", "noise": "last_noise", "scantype": "scantype",
+               "proposal": "proposal"}
 
     def __init__(self, catalog, prefilter=False):
         super().__init__(catalog)
@@ -53,10 +56,22 @@ class WrappedDatabroker(WrappedCatalogBase):
                                   scantype=scantype, edges=edges)
         else:
             return super().filter(samples=samples, groups=groups,
-                                       scantype=scantype, edges=edges)
+                                  scantype=scantype, edges=edges)
 
     def get_noise_catalogs(self):
         return self._get_subcatalogs(noise=True)
+
+    def describe(self):
+        nruns = len(self._catalog)
+        samples = self.list_samples()
+        groups = self.list_groups()
+        times = self.list_meta_key_vals("time")
+        start = datetime.datetime.fromtimestamp(min(times)).isoformat()
+        stop = datetime.datetime.fromtimestamp(max(times)).isoformat()
+        print(f"Catalog contains {nruns} runs")
+        print(f"Time range: {start} to {stop}")
+        print(f"Contains groups {groups}")
+        print(f"Contains sampes {samples}")
 
     def summarize(self):
         groupname = ""
@@ -78,6 +93,12 @@ class WrappedDatabroker(WrappedCatalogBase):
 
     def process_tes(self):
         process_catalog(self._catalog)
+
+    def check_processed(self):
+        for n in range(len(self._catalog)):
+            uid, run = self._catalog.items_indexer[n]
+            print(f"uid: {uid[:9]}...")
+            print(f"TES processed: {is_run_processed(run)}")
 
 
 wdb = WrappedDatabroker(db)

@@ -1,6 +1,10 @@
+"""
+A module to deal with fully-processed xastools-like spectra
+"""
 from ..tools.catalog import WrappedCatalogBase
 from tiled.queries import Key
 from functools import reduce
+
 
 class WrappedAnalysis(WrappedCatalogBase):
     KEY_MAP = {"samples": "scaninfo.sample", "groups": "scaninfo.group",
@@ -22,7 +26,7 @@ class WrappedAnalysis(WrappedCatalogBase):
             if s is not None:
                 vals.add(s)
         return vals
-            
+
     def filter(self, samples=None, groups=None, edges=None):
         return super().filter(samples=samples, groups=groups, edges=edges)
 

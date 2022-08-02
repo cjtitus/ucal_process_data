@@ -1,6 +1,7 @@
 # import mass
 import os
 import numpy as np
+import yaml
 
 from .calibration import summarize_calibration, make_calibration, load_calibration
 
@@ -18,7 +19,6 @@ def drift_correct(rd):
         print("Drift Correcting")
         _drift_correct(rd.data)
         rd.load_ds()
-        rd.driftCorrected = True
     else:
         print("Drift Correction already done")
 
@@ -42,9 +42,9 @@ def process(rd, calinfo, redo=False, rms_cutoff=0.2):
     calibrate(rd, calinfo, redo=redo, rms_cutoff=rms_cutoff)
 
 
-
 def save_tes_arrays(rd, overwrite=False):
     savefile = rd.savefile
+    metafile = os.path.splitext(rd.savefile)[0] + ".yaml"
     state = rd.state
     savedir = os.path.dirname(savefile)
     if not os.path.exists(savedir):
@@ -76,3 +76,6 @@ def save_tes_arrays(rd, overwrite=False):
              timestamps=ts_arr[sort_idx],
              energies=en_arr[sort_idx],
              channels=ch_arr[sort_idx])
+    md = rd.getProcessMd()
+    with open(metafile, 'w') as f:
+        yaml.dump(f, md)
