@@ -162,15 +162,20 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, as
     data.calibrateFollowingPlan(fv, dlo=7, dhi=7, overwriteRecipe=True)
     for ds in data.values():
         # ds.calibrateFollowingPlan(fv, overwriteRecipe=True, dlo=7, dhi=7)
-
+        
         ecal = ds.recipes['energy'].f
         degree = min(len(ecal._ph) - 1, 2)
         _, _, rms = find_poly_residual(ecal._energies, ecal._ph, degree, 'gain')
+        if np.any(ecal._ph < 0):
+            msg = f"Failed calibration with ph < 0"
+            print(msg)
+            ds.markBad(msg)
+            continue
         if rms > rms_cutoff:
             msg = f"Failed calibration cut with RMS: {rms}, cutoff: {rms_cutoff}"
             print(msg)
             ds.markBad(msg)
-
+            continue
 
 def make_calibration(calinfo, savedir=None, redo=False, rms_cutoff=0.2):
     # UUUUUUUUUGH need to make all the names make sense, maybe move this to

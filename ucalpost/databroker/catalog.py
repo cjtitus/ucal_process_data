@@ -1,6 +1,6 @@
 from .run import summarize_run, db
 from ..tes.process_routines import process_catalog
-from ..tes.process_routines import is_run_processed
+from ..tes.process_classes import is_run_processed
 from .export import export_run_to_analysis_catalog
 from databroker.queries import PartialUID
 from ..tools.catalog import WrappedCatalogBase
@@ -10,16 +10,16 @@ import datetime
 class WrappedDatabroker(WrappedCatalogBase):
     KEY_MAP = {"samples": "sample_args.sample_name.value", "groups": "group",
                "edges": "edge", "noise": "last_noise", "scantype": "scantype",
-               "proposal": "proposal"}
+               "proposal": "proposal", "uid": "uid"}
 
     def __init__(self, catalog, prefilter=False):
         super().__init__(catalog)
         if prefilter:
             self._catalog = self._filter_by_stop()
 
-    def get_subcatalogs(self, noise=True, groups=True, samples=True, edges=True):
+    def get_subcatalogs(self, noise=True, groups=True, samples=True, edges=True, **kwargs):
         return self._get_subcatalogs(noise=noise, groups=groups,
-                                     samples=samples, edges=edges)
+                                     samples=samples, edges=edges, **kwargs)
 
     def _filter_by_stop(self):
         ok_uuids = []

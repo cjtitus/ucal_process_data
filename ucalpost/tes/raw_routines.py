@@ -78,4 +78,4 @@ def save_tes_arrays(rd, overwrite=False):
              channels=ch_arr[sort_idx])
     md = rd.getProcessMd()
     with open(metafile, 'w') as f:
-        yaml.dump(f, md)
+        yaml.dump(md, f)

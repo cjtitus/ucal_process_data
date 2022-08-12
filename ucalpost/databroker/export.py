@@ -33,14 +33,14 @@ def get_with_fallbacks(thing, *possible_names, default=None):
 def get_run_header(run):
     metadata = {}
     scaninfo = {}
-    scaninfo['sample'] = run.start['sample_args']['sample_name']['value']
-    scaninfo['loadid'] = run.start['sample_args']['sample_id']['value']
+    scaninfo['sample'] = run.start['sample_md']['name']
+    scaninfo['loadid'] = run.start['sample_md']['sample_id']
     scaninfo['scan'] = run.start['scan_id']
     scaninfo['date'] = datetime.datetime.fromtimestamp(run.start['time']).isoformat()
     scaninfo['command'] = get_with_fallbacks(run.start, 'command', 'plan_name', default=None)
     scaninfo['element'] = get_with_fallbacks(run.start, 'element', 'edge', default=None)
     scaninfo['motor'] = convert_names(run.start['motors'][0])
-    scankeys = ['time', 'users', 'proposal', 'cycle', 'saf', 'group']
+    scankeys = ['time', 'users', 'proposal', 'cycle', 'saf', 'group_md', 'beamtime_uid', 'beamtime_start', 'repeat']
     for k in scankeys:
         if k in run.start:
             scaninfo[k] = run.start[k]
