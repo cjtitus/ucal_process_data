@@ -30,7 +30,10 @@ class AnalysisLoader:
         else:
             self.rd.update(state, savefile)
         if cal is None:
-            cal = get_cal(run)
+            if run.start.get('scantype', None) == 'calibration':
+                cal = run
+            else:
+                cal = get_cal(run)
         cal_savedir = get_save_directory(cal)
         cal_state = get_tes_state(cal)
         line_names = get_line_names(cal)

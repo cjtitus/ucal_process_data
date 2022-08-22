@@ -7,7 +7,7 @@ from functools import reduce
 
 
 class WrappedAnalysis(WrappedCatalogBase):
-    KEY_MAP = {"samples": "scaninfo.sample", "groups": "scaninfo.group",
+    KEY_MAP = {"samples": "scaninfo.sample", "groups": "scaninfo.group_md.name",
                "edges": "scaninfo.element", "loadid": "scaninfo.loadid",
                "scans": "scaninfo.scan"}
 
@@ -35,7 +35,7 @@ class WrappedAnalysis(WrappedCatalogBase):
             scaninfo = h.metadata['scaninfo']
             print(f"Date: {scaninfo['date']}")
             print(f"Scan: {scaninfo['scan']}")
-            print(f"Group: {scaninfo['group']}")
+            print(f"Group: {scaninfo['group_md']['name']}")
             print(f"Sample: {scaninfo['sample']}")
 
     def get_xas(self, subcatalogs=True):

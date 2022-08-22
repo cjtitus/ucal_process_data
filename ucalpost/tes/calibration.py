@@ -176,7 +176,11 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, as
             print(msg)
             ds.markBad(msg)
             continue
-
+        try:
+            ds.energy[:10]
+        except ValueError:
+            ds.markBad("ValueError on energy access, calibration curve is probably broken")
+            
 def make_calibration(calinfo, savedir=None, redo=False, rms_cutoff=0.2):
     # UUUUUUUUUGH need to make all the names make sense, maybe move this to
     # calibration file, obviously rename, since _calibrate is already a function

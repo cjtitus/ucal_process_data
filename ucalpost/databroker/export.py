@@ -50,16 +50,16 @@ def get_run_header(run):
     scaninfo['raw_uid'] = run.start['uid']
     motors = {}
     baseline = run.baseline.data
-    motors['exslit'] = get_with_fallbacks(baseline, 'Exit Slit of Mono Vertical Gap').data[0]
-    motors['manipx'] = get_with_fallbacks(baseline, 'manip_x', 'Manipulator_x').data[0]
-    motors['manipy'] = get_with_fallbacks(baseline, 'manip_y', 'Manipulator_y').data[0]
-    motors['manipz'] = get_with_fallbacks(baseline, 'manip_z', 'Manipulator_z').data[0]
-    motors['manipr'] = get_with_fallbacks(baseline, 'manip_r', 'Manipulator_r').data[0]
-    motors['samplex'] = get_with_fallbacks(baseline, 'manip_sx', 'Manipulator_sx').data[0]
-    motors['sampley'] = get_with_fallbacks(baseline, 'manip_sy', 'Manipulator_sy').data[0]
-    motors['samplez'] = get_with_fallbacks(baseline, 'manip_sz', 'Manipulator_sz').data[0]
-    motors['sampler'] = get_with_fallbacks(baseline, 'manip_sr', 'Manipulator_sr').data[0]
-    motors['tesz'] = get_with_fallbacks(baseline, 'tesz').data[0]
+    motors['exslit'] = get_with_fallbacks(baseline, 'Exit Slit of Mono Vertical Gap')[0]
+    motors['manipx'] = get_with_fallbacks(baseline, 'manip_x', 'Manipulator_x')[0]
+    motors['manipy'] = get_with_fallbacks(baseline, 'manip_y', 'Manipulator_y')[0]
+    motors['manipz'] = get_with_fallbacks(baseline, 'manip_z', 'Manipulator_z')[0]
+    motors['manipr'] = get_with_fallbacks(baseline, 'manip_r', 'Manipulator_r')[0]
+    motors['samplex'] = get_with_fallbacks(baseline, 'manip_sx', 'Manipulator_sx')[0]
+    motors['sampley'] = get_with_fallbacks(baseline, 'manip_sy', 'Manipulator_sy')[0]
+    motors['samplez'] = get_with_fallbacks(baseline, 'manip_sz', 'Manipulator_sz')[0]
+    motors['sampler'] = get_with_fallbacks(baseline, 'manip_sr', 'Manipulator_sr')[0]
+    motors['tesz'] = get_with_fallbacks(baseline, 'tesz')[0]
     metadata['scaninfo'] = scaninfo
     metadata['motors'] = motors
     metadata['channelinfo'] = {}
@@ -70,12 +70,12 @@ def get_run_data(run):
 
     natural_order = ["Seconds", "MONO", "ENERGY_ENC", "I0", "I1", "REF", "SC",
                      "tfy"]
-    exposure = float(run.primary.config['ucal_I400']['ucal_I400_exposure_sp'][0])
+    exposure = float(run.primary.descriptors[0]['configuration']['ucal_I400']['data']['ucal_I400_exposure_sp'])
     columns = []
     datadict = {}
     for key in run.primary.data:
         newkey = convert_names(key)
-        datadict[newkey] = run.primary.data[key].data
+        datadict[newkey] = run.primary.data[key][:]
     if 'Seconds' not in datadict:
         datadict['Seconds'] = np.zeros_like(datadict[newkey]) + exposure
     for k in natural_order:
