@@ -38,7 +38,10 @@ def calibrate(rd, calinfo, redo=False, rms_cutoff=2):
         print("Calibration already present")
 
 
-def process(rd, calinfo, redo=False, rms_cutoff=0.2):
+def process(rd, calinfo, redo=False, rms_cutoff=0.2, dc=True):
+    if dc:
+        drift_correct(rd)
+        drift_correct(calinfo)
     calibrate(rd, calinfo, redo=redo, rms_cutoff=rms_cutoff)
 
 

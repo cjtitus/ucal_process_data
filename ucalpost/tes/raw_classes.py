@@ -88,3 +88,5 @@ class CalibrationInfo(RawData):
         else:
             self.cal_file = None
             self._calibrated = False
+
+

@@ -92,20 +92,22 @@ def ds_learnCalibrationPlanFromEnergiesAndPeaks(self, attr, states, ph_fwhm, lin
 mass.off.Channel.learnCalibrationPlanFromEnergiesAndPeaks = ds_learnCalibrationPlanFromEnergiesAndPeaks
 
 
-def data_calibrationLoadFromHDF5Simple(self, h5name):
+def data_calibrationLoadFromHDF5Simple(self, h5name, recipeSuffix=""):
     print(f"loading calibration from {h5name}")
     with h5py.File(h5name, "r") as h5:
         nchans = len(list(h5.keys()))
         print(f"Calibration for {nchans} channels found")
+        calibrationAttr = h5.attrs.get('calAttr', 'filtValue')
+        recipeName = 'energy' + recipeSuffix
         for channum_str in h5.keys():
             cal = mass.calibration.EnergyCalibration.load_from_hdf5(h5, channum_str)
             channum = int(channum_str)
             if channum in self:
                 ds = self[channum]
-                ds.recipes.add("energy", cal, ["filtValue"], overwrite=True)
+                ds.recipes.add(recipeName, cal, [calibrationAttr], overwrite=True)
     # set other channels bad
     for ds in self.values():
-        if "energy" not in ds.recipes.keys():
+        if recipeName not in ds.recipes.keys():
             ds.markBad("no loaded calibration")
 
 mass.off.ChannelGroup.calibrationLoadFromHDF5Simple = data_calibrationLoadFromHDF5Simple
@@ -117,7 +119,7 @@ def data_calibrationSaveToHDF5Simple(self, h5name):
         for ds in self.values():
             cal = ds.recipes["energy"].f
             cal.save_to_hdf5(h5, f"{ds.channum}")
-
+        h5.attrs['calAttr'] = ds.calibrationPlanAttr
 
 mass.off.ChannelGroup.calibrationSaveToHDF5Simple = data_calibrationSaveToHDF5Simple
 
@@ -146,6 +148,7 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, as
     data.setDefaultBinsize(0.2)
     # ds.plotHist(np.arange(0,30000,10), fv, states=None)
     line_energies = get_line_energies(line_names)
+    recipeName = 'energy' + recipeSuffix
     # ds.diagnoseCalibration()
     for ds in data.values():
         try:
@@ -159,11 +162,12 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, as
             ds.markBad("Failed peak assignment")
 
     #data.alignToReferenceChannel(ds, fv, np.arange(1000, 27000,  10))
-    data.calibrateFollowingPlan(fv, dlo=7, dhi=7, overwriteRecipe=True)
+    
+    data.calibrateFollowingPlan(fv, calibratedName=recipeName, dlo=7, dhi=7, overwriteRecipe=True)
     for ds in data.values():
         # ds.calibrateFollowingPlan(fv, overwriteRecipe=True, dlo=7, dhi=7)
         
-        ecal = ds.recipes['energy'].f
+        ecal = ds.recipes[recipeName].f
         degree = min(len(ecal._ph) - 1, 2)
         _, _, rms = find_poly_residual(ecal._energies, ecal._ph, degree, 'gain')
         if np.any(ecal._ph < 0):
@@ -180,7 +184,8 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, as
             ds.energy[:10]
         except ValueError:
             ds.markBad("ValueError on energy access, calibration curve is probably broken")
-            
+
+
 def make_calibration(calinfo, savedir=None, redo=False, rms_cutoff=0.2):
     # UUUUUUUUUGH need to make all the names make sense, maybe move this to
     # calibration file, obviously rename, since _calibrate is already a function
