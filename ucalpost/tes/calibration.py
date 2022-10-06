@@ -144,7 +144,7 @@ def find_poly_residual(cal_energies, opt_assignment, degree, curvename="gain"):
     return coeff, residual, residual_rms
 
 
-def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, assignment="nsls", **kwargs):
+def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, assignment="nsls", recipeSuffix="", **kwargs):
     data.setDefaultBinsize(0.2)
     # ds.plotHist(np.arange(0,30000,10), fv, states=None)
     line_energies = get_line_energies(line_names)
@@ -161,12 +161,12 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, as
             print("Chan {ds.channum} failed peak assignment")
             ds.markBad("Failed peak assignment")
 
-    #data.alignToReferenceChannel(ds, fv, np.arange(1000, 27000,  10))
-    
-    data.calibrateFollowingPlan(fv, calibratedName=recipeName, dlo=7, dhi=7, overwriteRecipe=True)
+    # data.alignToReferenceChannel(ds, fv, np.arange(1000, 27000,  10))
+    data.calibrateFollowingPlan(fv, calibratedName=recipeName, dlo=7, dhi=7,
+                                overwriteRecipe=True)
     for ds in data.values():
         # ds.calibrateFollowingPlan(fv, overwriteRecipe=True, dlo=7, dhi=7)
-        
+
         ecal = ds.recipes[recipeName].f
         degree = min(len(ecal._ph) - 1, 2)
         _, _, rms = find_poly_residual(ecal._energies, ecal._ph, degree, 'gain')

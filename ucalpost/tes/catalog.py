@@ -20,6 +20,8 @@ class CatalogData:
         self.cal_states = [get_tes_state(cal) for cal in self.cal_runs]
         self.data_states = [get_tes_state(d) for d in self.data_runs]
         allruns = cal_runs + data_runs
+        # For convenience later
+        self.run_dict = {get_tes_state(r): r for r in allruns}
         self.off_filename = get_filename(allruns[0])
         if savenames is None:
             self.savenames = {}
@@ -54,6 +56,34 @@ def driftCorrect(catalog, states=None, redo=False):
         print("Drift Correction already done")
 
 
+def makeStateCalibration(catalog, state, attr, rms_cutoff=0.2, save=True,
+                         **kwargs):
+    data = catalog.data
+    run = catalog.run_dict[state]
+
+    line_names = kwargs.get('line_names', get_line_names(run))
+
+    if 'savefile' not in kwargs:
+        savebase = "_".join(path.basename(catalog.off_filename).split('_')[:-1])
+        savefile = f"{savebase}_{state}_cal.hdf5"
+    else:
+        savefile = kwargs['savefile']
+    _calibrate(data, state, line_names, fv=attr, rms_cutoff=rms_cutoff, recipeSuffix="_"+state)
+    if save:
+        if not path.exists(path.dirname(savefile)):
+            os.makedirs(path.dirname(savefile))
+        data.calibrationSaveToHDF5Simple(savefile)
+
+
+def loadStateCalibration(catalog, state, attr, **kwargs):
+    if 'savefile' not in kwargs:
+        savebase = "_".join(path.basename(catalog.off_filename).split('_')[:-1])
+        savefile = f"{savebase}_{state}_cal.hdf5"
+    else:
+        savefile = kwargs['savefile']
+
+    catalog.data.calibrationLoadFromHDF5Simple(savefile, recipeSuffix="_"+state)
+
 def calibrate(catalog, states=None, attr=None, stateOptions={}, rms_cutoff=0.2,
               save=True, saveSummary=True):
     cal_md = {}
@@ -63,20 +93,9 @@ def calibrate(catalog, states=None, attr=None, stateOptions={}, rms_cutoff=0.2,
         attr = 'filtValueDC' if catalog.driftCorrected else 'filtValue'
     cal_md['states'] = states
     cal_md['attr'] = attr
-    for c in catalog.cal_runs:
-        state = get_tes_state(c)
-        line_names = get_line_names(c)
+    for state in catalog.cal_states:
         opt = stateOptions.get(state, {})
-        if 'savefile' not in opt:
-            savebase = "_".join(path.basename(catalog.off_filename).split('_')[:-1])
-            savefile = f"{savebase}_{state}_cal.hdf5"
-        else:
-            savefile = opt['savefile']
-        _calibrate(catalog.data, state, line_names, fv=attr, rms_cutoff=rms_cutoff)
-        if save:
-            if not path.exists(path.dirname(savefile)):
-                os.makedirs(path.dirname(savefile))
-            catalog.data.calibrationSaveToHDF5Simple(savefile)
+        makeStateCalibration(catalog, state, attr, rms_cutoff, save, **opt)
     catalog.cal_md = cal_md
 
 
