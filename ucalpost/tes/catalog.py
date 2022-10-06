@@ -63,17 +63,18 @@ def makeStateCalibration(catalog, state, attr, rms_cutoff=0.2, save=True,
 
     line_names = kwargs.get('line_names', get_line_names(run))
     savedir = get_save_directory(run)
-    
+    recipeName = f"energy_{state}"
     if 'savefile' not in kwargs:
         savebase = "_".join(path.basename(catalog.off_filename).split('_')[:-1])
         savefile = path.join(savedir, f"{savebase}_{state}_cal.hdf5")
     else:
         savefile = kwargs['savefile']
-    _calibrate(data, state, line_names, fv=attr, rms_cutoff=rms_cutoff, recipeSuffix="_"+state)
+    _calibrate(data, state, line_names, fv=attr, rms_cutoff=rms_cutoff,
+               recipeName=recipeName)
     if save:
         if not path.exists(path.dirname(savefile)):
             os.makedirs(path.dirname(savefile))
-        data.calibrationSaveToHDF5Simple(savefile)
+        data.calibrationSaveToHDF5Simple(savefile, recipeName=recipeName)
 
 
 def loadStateCalibration(catalog, state, attr, **kwargs):
@@ -84,8 +85,8 @@ def loadStateCalibration(catalog, state, attr, **kwargs):
         savefile = path.join(savedir, f"{savebase}_{state}_cal.hdf5")
     else:
         savefile = kwargs['savefile']
-
-    catalog.data.calibrationLoadFromHDF5Simple(savefile, recipeSuffix="_"+state)
+    recipeName = f"energy_{state}"
+    catalog.data.calibrationLoadFromHDF5Simple(savefile, recipeName)
 
 def calibrate(catalog, states=None, attr=None, stateOptions={}, rms_cutoff=0.2,
               save=True, saveSummary=True):

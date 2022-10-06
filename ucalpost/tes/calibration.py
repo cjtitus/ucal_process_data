@@ -92,13 +92,12 @@ def ds_learnCalibrationPlanFromEnergiesAndPeaks(self, attr, states, ph_fwhm, lin
 mass.off.Channel.learnCalibrationPlanFromEnergiesAndPeaks = ds_learnCalibrationPlanFromEnergiesAndPeaks
 
 
-def data_calibrationLoadFromHDF5Simple(self, h5name, recipeSuffix=""):
+def data_calibrationLoadFromHDF5Simple(self, h5name, recipeName='energy'):
     print(f"loading calibration from {h5name}")
     with h5py.File(h5name, "r") as h5:
         nchans = len(list(h5.keys()))
         print(f"Calibration for {nchans} channels found")
         calibrationAttr = h5.attrs.get('calAttr', 'filtValue')
-        recipeName = 'energy' + recipeSuffix
         for channum_str in h5.keys():
             cal = mass.calibration.EnergyCalibration.load_from_hdf5(h5, channum_str)
             channum = int(channum_str)
@@ -113,11 +112,11 @@ def data_calibrationLoadFromHDF5Simple(self, h5name, recipeSuffix=""):
 mass.off.ChannelGroup.calibrationLoadFromHDF5Simple = data_calibrationLoadFromHDF5Simple
 
 
-def data_calibrationSaveToHDF5Simple(self, h5name):
+def data_calibrationSaveToHDF5Simple(self, h5name, recipeName='energy'):
     print(f"writing calibration to {h5name}")
     with h5py.File(h5name, "w") as h5:
         for ds in self.values():
-            cal = ds.recipes["energy"].f
+            cal = ds.recipes[recipeName].f
             cal.save_to_hdf5(h5, f"{ds.channum}")
         h5.attrs['calAttr'] = ds.calibrationPlanAttr
 
@@ -144,11 +143,10 @@ def find_poly_residual(cal_energies, opt_assignment, degree, curvename="gain"):
     return coeff, residual, residual_rms
 
 
-def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, assignment="nsls", recipeSuffix="", **kwargs):
+def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, assignment="nsls", recipeName="energy", **kwargs):
     data.setDefaultBinsize(0.2)
     # ds.plotHist(np.arange(0,30000,10), fv, states=None)
     line_energies = get_line_energies(line_names)
-    recipeName = 'energy' + recipeSuffix
     # ds.diagnoseCalibration()
     for ds in data.values():
         try:
