@@ -3,7 +3,7 @@ from mass.off import getOffFileListFromOneFile as getOffList
 import os
 from os import path
 from ucalpost.tes.calibration import _calibrate
-from ucalpost.databroker.run import get_tes_state, get_line_names, get_filename
+from ucalpost.databroker.run import get_tes_state, get_line_names, get_filename, get_save_directory
 from ucalpost.tes.process_routines import get_analyzed_filename
 
 
@@ -62,10 +62,11 @@ def makeStateCalibration(catalog, state, attr, rms_cutoff=0.2, save=True,
     run = catalog.run_dict[state]
 
     line_names = kwargs.get('line_names', get_line_names(run))
-
+    savedir = get_save_directory(run)
+    
     if 'savefile' not in kwargs:
         savebase = "_".join(path.basename(catalog.off_filename).split('_')[:-1])
-        savefile = f"{savebase}_{state}_cal.hdf5"
+        savefile = path.join(savedir, f"{savebase}_{state}_cal.hdf5")
     else:
         savefile = kwargs['savefile']
     _calibrate(data, state, line_names, fv=attr, rms_cutoff=rms_cutoff, recipeSuffix="_"+state)
@@ -76,9 +77,11 @@ def makeStateCalibration(catalog, state, attr, rms_cutoff=0.2, save=True,
 
 
 def loadStateCalibration(catalog, state, attr, **kwargs):
+    run = catalog.run_dict[state]
+    savedir = get_save_directory(run)
     if 'savefile' not in kwargs:
         savebase = "_".join(path.basename(catalog.off_filename).split('_')[:-1])
-        savefile = f"{savebase}_{state}_cal.hdf5"
+        savefile = path.join(savedir, f"{savebase}_{state}_cal.hdf5")
     else:
         savefile = kwargs['savefile']
 
