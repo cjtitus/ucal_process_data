@@ -181,7 +181,7 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, as
             ds.markBad(msg)
             continue
         try:
-            ds.getAttr(recipeName)[:10]
+            ds.getAttr(recipeName, cal_state)[:10]
         except ValueError:
             ds.markBad("ValueError on energy access, calibration curve is probably broken")
 
