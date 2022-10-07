@@ -5,6 +5,7 @@ from os import path
 from ucalpost.tes.calibration import _calibrate
 from ucalpost.databroker.run import get_tes_state, get_line_names, get_filename, get_save_directory
 from ucalpost.tes.process_routines import get_analyzed_filename
+import numpy as np
 
 
 class CatalogData:
@@ -41,6 +42,42 @@ class CatalogData:
         except:
             return False
 
+    def saveStateArray(self, state, attr='energy', overwrite=False):
+        savefile = self.savenames[state]
+        # metafile = path.splitext(savefile)[0] + ".yaml"
+        savedir = path.dirname(savefile)
+        if not path.exists(savedir):
+            os.makedirs(savedir)
+        if path.exists(savefile) and not overwrite:
+            print(f"Not overwriting {savefile}")
+            return
+
+        timestamps = []
+        energies = []
+        channels = []
+        for ds in self.data.values():
+            try:
+                uns, es = ds.getAttr(["unixnano", attr], state)
+            except ValueError:
+                print(f"{ds.channum} failed")
+                ds.markBad("Failed to get energy")
+                continue
+            ch = np.zeros_like(uns) + ds.channum
+            timestamps.append(uns)
+            energies.append(es)
+            channels.append(ch)
+        ts_arr = np.concatenate(timestamps)
+        en_arr = np.concatenate(energies)
+        ch_arr = np.concatenate(channels)
+        sort_idx = np.argsort(ts_arr)
+        print(f"Saving {savefile}")
+        np.savez(savefile,
+                 timestamps=ts_arr[sort_idx],
+                 energies=en_arr[sort_idx],
+                 channels=ch_arr[sort_idx])
+        #md = rd.getProcessMd()
+        #with open(metafile, 'w') as f:
+        #    yaml.dump(md, f)
 
 def driftCorrect(catalog, states=None, redo=False):
     """
