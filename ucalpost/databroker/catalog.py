@@ -23,11 +23,10 @@ class WrappedDatabroker(WrappedCatalogBase):
 
     def _filter_by_stop(self):
         ok_uuids = []
-        for n in range(len(self._catalog)):
+        for uid, run in self._catalog.items():
             try:
-                uuid, item = self._catalog.items_indexer[n]
-                if item.metadata['stop']['exit_status'] == "success":
-                    ok_uuids.append(uuid)
+                if run.metadata['stop']['exit_status'] == "success":
+                    ok_uuids.append(uid)
             except:
                 pass
         return self._catalog.search(PartialUID(*ok_uuids))
@@ -75,8 +74,7 @@ class WrappedDatabroker(WrappedCatalogBase):
 
     def summarize(self):
         groupname = ""
-        for n in range(len(self._catalog)):
-            uid, run = self._catalog.items_indexer[n]
+        for uid, run in self._catalog.items():
             group = run.metadata['start'].get('group', '')
             if group != groupname:
                 groupname = group
@@ -95,8 +93,7 @@ class WrappedDatabroker(WrappedCatalogBase):
         process_catalog(self._catalog)
 
     def check_processed(self):
-        for n in range(len(self._catalog)):
-            uid, run = self._catalog.items_indexer[n]
+        for uid, run in self._catalog.items():
             print(f"uid: {uid[:9]}...")
             print(f"TES processed: {is_run_processed(run)}")
 
