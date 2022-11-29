@@ -36,7 +36,33 @@ class WrappedAnalysis(WrappedCatalogBase):
             print(f"Date: {scaninfo['date']}")
             print(f"Scan: {scaninfo['scan']}")
             print(f"Group: {scaninfo['group_md']['name']}")
-            print(f"Sample: {scaninfo['sample']}")
+            print(f"Sample: {scaninfo['sample']} Edge: {scaninfo['element']}")
+
+    def describe(self):
+        desc_dict = {}
+        for h in self._catalog.values():
+            scaninfo = h.metadata['scaninfo']
+            scan = scaninfo['scan']
+            group = scaninfo['group_md']['name']
+            sample = scaninfo['sample']
+            edge = scaninfo['element']
+            if group not in desc_dict:
+                desc_dict[group] = {}
+            group_dict = desc_dict[group]
+            if sample not in group_dict:
+                group_dict[sample] = {}
+            sample_dict = group_dict[sample]
+            if edge not in sample_dict:
+                sample_dict[edge] = []
+            edge_list = sample_dict[edge]
+            edge_list.append(scan)
+        for group, group_dict in desc_dict.items():
+            print("-------------------------")
+            print(f"Group: {group}")
+            for sample, sample_dict in group_dict.items():
+                print(f"Sample: {sample}")
+                for edge, edge_list in sample_dict.items():
+                    print(f"Edge: {edge}, Scans: {edge_list}")
 
     def get_xas(self, subcatalogs=True):
         if subcatalogs:

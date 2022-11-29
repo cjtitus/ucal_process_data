@@ -163,7 +163,7 @@ def export_run_to_analysis_catalog(run, infer_rois=True, rois=[], channels=None,
         if len(ANALYSIS_CATALOG.search(Key("scaninfo.raw_uid") == uid)) > 0:
             print("Data associated with this run is already in the catalog")
             return
-        
+
     data, header = get_data_and_header(run, infer_rois=infer_rois, rois=rois,
                                        channels=channels)
 
@@ -171,8 +171,8 @@ def export_run_to_analysis_catalog(run, infer_rois=True, rois=[], channels=None,
         new_uid = ANALYSIS_CATALOG.write_array(data, metadata=header,
                                                specs=['nistxas'])
     except HTTPStatusError:
-        print("Got an HTTP Error, will sleep and retry")
-        time.sleep(1)
+        print("Got an HTTP Error, will sleep and retry once")
+        sleep(1)
         new_uid = ANALYSIS_CATALOG.write_array(data, metadata=header,
                                                specs=['nistxas'])
     return new_uid
