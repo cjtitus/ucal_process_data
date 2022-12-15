@@ -1,4 +1,5 @@
-from xastools.io.exportXAS import exportXASToYaml
+from xastools.io.exportXAS import exportXASToYaml, exportXASToSSRL
+import datetime
 from ..tools.utils import iterfy
 
 
@@ -17,7 +18,7 @@ def export_catalog_to_yaml(catalog, folder=None, namefmt=None, subcatalogs=True,
     """
 
     xaslist = catalog.get_xas(subcatalogs=subcatalogs)
-    
+
     for xas in iterfy(xaslist):
         if folder is None:
             folder = xas_to_directory(xas)
@@ -27,3 +28,17 @@ def export_catalog_to_yaml(catalog, folder=None, namefmt=None, subcatalogs=True,
             else:
                 namefmt = "{sample}_{element}_{scan}.yaml"
         exportXASToYaml(xas, folder, namefmt=namefmt, **export_kwargs)
+
+
+def export_catalog_to_ssrl(catalog, folder=None, namefmt=None, subcatalogs=True, **export_kwargs):
+    xaslist = catalog.get_xas(subcatalogs=subcatalogs)
+
+    for xas in iterfy(xaslist):
+        if folder is None:
+            folder = xas_to_directory(xas)
+        if namefmt is None:
+            if subcatalogs:
+                namefmt = "{sample}_{element}_coadded.dat"
+            else:
+                namefmt = "{sample}_{element}_{scan}.dat"
+        exportXASToSSRL(xas, folder, namefmt=namefmt, **export_kwargs)
