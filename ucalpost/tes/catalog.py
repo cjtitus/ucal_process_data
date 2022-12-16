@@ -79,6 +79,7 @@ class CatalogData:
         #with open(metafile, 'w') as f:
         #    yaml.dump(md, f)
 
+
 def driftCorrect(catalog, states=None, redo=False):
     """
     catalog : A CatalogData instance
@@ -93,17 +94,22 @@ def driftCorrect(catalog, states=None, redo=False):
         print("Drift Correction already done")
 
 
+def getCalibrationSavefile(catalog, state):
+    savedir = get_save_directory(run)
+    savebase = "_".join(path.basename(catalog.off_filename).split('_')[:-1])
+    savefile = path.join(savedir, f"{savebase}_{state}_cal.hdf5")
+    return savefile
+
 def makeStateCalibration(catalog, state, attr, rms_cutoff=0.2, save=True,
                          **kwargs):
     data = catalog.data
     run = catalog.run_dict[state]
 
     line_names = kwargs.get('line_names', get_line_names(run))
-    savedir = get_save_directory(run)
+
     recipeName = f"energy_{state}"
     if 'savefile' not in kwargs:
-        savebase = "_".join(path.basename(catalog.off_filename).split('_')[:-1])
-        savefile = path.join(savedir, f"{savebase}_{state}_cal.hdf5")
+        savefile = getCalibrationSavefile(catalog, state)
     else:
         savefile = kwargs['savefile']
     _calibrate(data, state, line_names, fv=attr, rms_cutoff=rms_cutoff,
@@ -114,7 +120,7 @@ def makeStateCalibration(catalog, state, attr, rms_cutoff=0.2, save=True,
         data.calibrationSaveToHDF5Simple(savefile, recipeName=recipeName)
 
 
-def loadStateCalibration(catalog, state, attr, **kwargs):
+def loadStateCalibration(catalog, state, **kwargs):
     run = catalog.run_dict[state]
     savedir = get_save_directory(run)
     if 'savefile' not in kwargs:
@@ -124,6 +130,11 @@ def loadStateCalibration(catalog, state, attr, **kwargs):
         savefile = kwargs['savefile']
     recipeName = f"energy_{state}"
     catalog.data.calibrationLoadFromHDF5Simple(savefile, recipeName)
+
+
+def loadCompoundCalibration(catalog, data_states=None, cal_states=None):
+    pass
+
 
 def calibrate(catalog, states=None, attr=None, stateOptions={}, rms_cutoff=0.2,
               save=True, saveSummary=True):
