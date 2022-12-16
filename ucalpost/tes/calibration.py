@@ -14,6 +14,8 @@ cal_line_master = {'ck': 278.21, 'nk': 392.25, 'tila': 452, 'ok': 524.45, 'fell'
                    'znla': 1009.39, 'znlb': 1032.46}
 
 
+mass.line_models.VALIDATE_BIN_SIZE = False
+
 def get_line_energies(line_names):
     """
     Takes a list of strings or floats, and returns the line energies in

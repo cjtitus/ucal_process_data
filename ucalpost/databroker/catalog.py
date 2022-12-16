@@ -2,15 +2,15 @@ from .run import summarize_run, db
 from ..tes.process_routines import process_catalog
 from ..tes.process_classes import is_run_processed
 from .export import export_run_to_analysis_catalog
-from databroker.queries import PartialUID
+from databroker.queries import PartialUID, TimeRange, Key
 from ..tools.catalog import WrappedCatalogBase
 import datetime
 
 
 class WrappedDatabroker(WrappedCatalogBase):
-    KEY_MAP = {"samples": "sample_args.sample_name.value", "groups": "group",
+    KEY_MAP = {"samples": "sample_args.sample_name.value", "groups": "group_md.name",
                "edges": "edge", "noise": "last_noise", "scantype": "scantype",
-               "proposal": "proposal", "uid": "uid"}
+               "proposal": "proposal", "uid": "uid", "beamtime_start": "beamtime_start"}
 
     def __init__(self, catalog, prefilter=False):
         super().__init__(catalog)
@@ -31,10 +31,27 @@ class WrappedDatabroker(WrappedCatalogBase):
                 pass
         return self._catalog.search(PartialUID(*ok_uuids))
 
+    def filter_by_time(self, since=None, until=None):
+        return self.search(TimeRange(since=since, until=until))
+
     def filter_by_stop(self):
         catalog = self._filter_by_stop()
         return self.__class__(catalog)
 
+    def get_beamtime(self, since, until=None):
+        """
+        since : iso formatted date string
+        until : optional, iso formatted date string
+        """
+        if until is None:
+            startdate = datetime.datetime.fromisoformat(since)
+            defaultdelta = datetime.timedelta(days=1)
+            untildatetime = startdate + defaultdelta
+            until = untildatetime.isoformat()
+        beamtime_start_vals = self.search(Key("beamtime_start") > since).search(Key("beamtime_start") < until).list_meta_key_vals("beamtime_start")
+        return self.filter_by_key("beamtime_start", beamtime_start_vals)
+        
+        
     def list_meta_key_vals(self, key):
         keys = key.split('.')
         vals = set()
@@ -70,7 +87,7 @@ class WrappedDatabroker(WrappedCatalogBase):
         print(f"Catalog contains {nruns} runs")
         print(f"Time range: {start} to {stop}")
         print(f"Contains groups {groups}")
-        print(f"Contains sampes {samples}")
+        print(f"Contains samples {samples}")
 
     def summarize(self):
         groupname = ""

@@ -23,20 +23,24 @@ class WrappedCatalogBase(ABC):
 
     @classmethod
     def _make_filter_function(cls, search_key, catalog_key):
-        def _inner(self, values):
-            return self.filter_by_key(catalog_key, values)
 
         fname = cls._filter_function_name(search_key)
-        _inner.__name__ = fname
-        setattr(cls, fname, _inner)
-
+        if not hasattr(cls, fname):
+            def _inner(self, values):
+                return self.filter_by_key(catalog_key, values)
+            _inner.__name__ = fname
+            setattr(cls, fname, _inner)
+        
+            
     @classmethod
     def _make_list_function(cls, list_key, catalog_key):
-        def _inner(self):
-            return self.list_meta_key_vals(catalog_key)
         fname = cls._list_function_name(list_key)
-        _inner.__name__ = fname
-        setattr(cls, fname, _inner)
+        if not hasattr(cls, fname):
+            def _inner(self):
+                return self.list_meta_key_vals(catalog_key)
+        
+            _inner.__name__ = fname
+            setattr(cls, fname, _inner)
 
     def __init__(self, catalog):
         self._catalog = catalog
@@ -50,7 +54,7 @@ class WrappedCatalogBase(ABC):
         return self.__class__(self._catalog.search(expr))
     
     def filter_by_key(self, key, values):
-        return self.search(In(key, iterfy(values)))
+        return self.search(In(key, list(iterfy(values))))
 
     def _get_subcatalogs(self, **kwargs):
         subcatalogs = []
