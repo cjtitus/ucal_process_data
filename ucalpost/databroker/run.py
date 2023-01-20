@@ -65,7 +65,13 @@ def get_tes_state(run):
 
 
 def get_line_names(cal_run):
-    return ["ck", "nk", "ok", "fela", "nila", "cula"]
+    if 'cal_lines' in cal_run.start:
+        return cal_run.start['cal_lines']
+    samplename = get_samplename(cal_run)
+    if samplename == 'mixv1':
+        return ["ck", "nk", "ok", "fela", "nila", "cula"]
+    else:
+        return ["ck", "nk", "ok", "fela", "nila", "cula"]
 
 
 def get_cal(run):
@@ -79,7 +85,9 @@ def getRunFromStop(doc):
 
 
 def get_samplename(run):
-    if 'sample_args' in run.start:
+    if 'sample_md' in run.start:
+        return run.start['sample_md']['name']
+    elif 'sample_args' in run.start:
         return run.start['sample_args']['sample_name']['value']
     else:
         return "None"
@@ -91,7 +99,9 @@ def summarize_run(run):
     scantype = run.start.get('scantype', 'None')
 
     print(f"Scan {scanid}")
-    if 'group' in run.start:
+    if 'group_md' in run.start:
+        print(f"Group: {run.start['group_md']['name']}")
+    elif 'group' in run.start:
         print(f"Group: {run.start['group']}")
     print(f"Sample name: {sample}")
     if scantype == 'xas':
