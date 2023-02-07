@@ -30,15 +30,14 @@ class WrappedCatalogBase(ABC):
                 return self.filter_by_key(catalog_key, values)
             _inner.__name__ = fname
             setattr(cls, fname, _inner)
-        
-            
+
     @classmethod
     def _make_list_function(cls, list_key, catalog_key):
         fname = cls._list_function_name(list_key)
         if not hasattr(cls, fname):
             def _inner(self):
                 return self.list_meta_key_vals(catalog_key)
-        
+
             _inner.__name__ = fname
             setattr(cls, fname, _inner)
 

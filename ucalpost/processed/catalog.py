@@ -6,13 +6,27 @@ from tiled.queries import Key
 from functools import reduce
 
 
+def subcatalog_input_transformer(arg):
+    if arg is True:
+        return {}
+    elif arg is False or arg is None:
+        return {'subcatalogs': False}
+    else:
+        return arg
+
+
 class WrappedAnalysis(WrappedCatalogBase):
     KEY_MAP = {"samples": "scaninfo.sample", "groups": "scaninfo.group_md.name",
                "edges": "scaninfo.element", "loadid": "scaninfo.loadid",
                "scans": "scaninfo.scan"}
 
-    def get_subcatalogs(self, groups=True, samples=True, edges=True):
-        return self._get_subcatalogs(groups=groups, samples=samples, edges=edges)
+    def get_subcatalogs(self, groups=True, samples=True, edges=True,
+                        subcatalogs=True):
+        if subcatalogs:
+            return self._get_subcatalogs(groups=groups, samples=samples,
+                                         edges=edges)
+        else:
+            return [self]
 
     def list_meta_key_vals(self, key):
         keys = key.split('.')
@@ -64,10 +78,13 @@ class WrappedAnalysis(WrappedCatalogBase):
                 for edge, edge_list in sample_dict.items():
                     print(f"Edge: {edge}, Scans: {edge_list}")
 
-    def get_xas(self, subcatalogs=True):
-        if subcatalogs:
-            catalogs = self.get_subcatalogs()
-            xas = [c.get_xas(False) for c in catalogs]
+    def get_xas(self, sample=None, subcatalogs=None):
+        if sample is not None:
+            catalog = self.filter_by_samples([sample])
+            return catalog.get_xas(subcatalogs=subcatalogs)
+        if subcatalogs is not None:
+            catalogs = self.get_subcatalogs(**subcatalog_input_transformer(subcatalog))
+            xas = [c.get_xas() for c in catalogs]
             return xas
         else:
             allxas = [v.to_xas() for v in self._catalog.values()]
