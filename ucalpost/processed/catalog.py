@@ -22,6 +22,10 @@ class WrappedAnalysis(WrappedCatalogBase):
 
     def get_subcatalogs(self, groups=True, samples=True, edges=True,
                         subcatalogs=True):
+        """
+        subcatalogs: bool. If False, don't get subcatalogs, but wrap the current catalog in a list,
+        so that it can be treated as the output from get_subcatalogs
+        """
         if subcatalogs:
             return self._get_subcatalogs(groups=groups, samples=samples,
                                          edges=edges)
@@ -78,13 +82,18 @@ class WrappedAnalysis(WrappedCatalogBase):
                 for edge, edge_list in sample_dict.items():
                     print(f"Edge: {edge}, Scans: {edge_list}")
 
-    def get_xas(self, sample=None, subcatalogs=None):
+    def get_xas(self, sample=None, subcatalogs=True):
+        """
+        sample: simple pre-filter by a sample name
+        subcatalogs: Bool or dictionary. If dictionary, passed as kwargs to
+        get_subcatalogs so that default options can be modified
+        """
         if sample is not None:
             catalog = self.filter_by_samples([sample])
             return catalog.get_xas(subcatalogs=subcatalogs)
-        if subcatalogs is not None:
-            catalogs = self.get_subcatalogs(**subcatalog_input_transformer(subcatalog))
-            xas = [c.get_xas() for c in catalogs]
+        if subcatalogs is not False:
+            catalogs = self.get_subcatalogs(**subcatalog_input_transformer(subcatalogs))
+            xas = [c.get_xas(subcatalogs=False) for c in catalogs]
             return xas
         else:
             allxas = [v.to_xas() for v in self._catalog.values()]
