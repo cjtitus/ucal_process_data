@@ -19,7 +19,7 @@ Module to export processed data to analysis catalog
 ANALYSIS_CATALOG = None
 
 def convert_names(name):
-    name_conversions = {"en_energy_setpoint": "MONO", "en_energy": "ENERGY_ENC", "ucal_I400_i0up": "I0", "ucal_I400_ref": "REF", "ucal_I400_sc": "SC", "ucal_i400_i0up": "I0", "ucal_i400_ref": "REF", "ucal_i400_sc": "SC", "tes_tfy": "tfy"}
+    name_conversions = {"en_energy_setpoint": "MONO", "en_energy": "ENERGY_ENC", "ucal_I400_i0up": "I0", "ucal_I400_ref": "REF", "ucal_I400_sc": "SC", "ucal_i400_i0up": "I0", "ucal_i400_ref": "REF", "ucal_i400_sc": "SC", "tes_tfy": "tfy", 'ucal_i0up': 'I0', 'ucal_ref': 'REF', 'ucal_sc': 'SC'}
     return name_conversions.get(name, name)
 
 
@@ -80,7 +80,9 @@ def get_run_data(run):
     natural_order = ["Seconds", "MONO", "ENERGY_ENC", "I0", "I1", "REF", "SC",
                      "tfy"]
     config = run.primary.descriptors[0]['configuration']
-    exposure = get_with_fallbacks(config, ['ucal_i400_i0up', 'data', 'ucal_i400_i0up_exposure_time'],
+    exposure = get_with_fallbacks(config, ['ucal_i0up', 'data', 'ucal_i0up_exposure_time'],
+                                  ['ucal_sc', 'data', 'ucal_sc_exposure_time'],
+                                  ['ucal_i400_i0up', 'data', 'ucal_i400_i0up_exposure_time'],
                                   ['ucal_i400_sc', 'data', 'ucal_i400_sc_exposure_time'],
                                   ['ucal_I400', 'data', 'ucal_I400_exposure_sp'])
     exposure = float(exposure)
