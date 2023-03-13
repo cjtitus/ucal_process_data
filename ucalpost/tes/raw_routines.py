@@ -32,10 +32,13 @@ def calibrate(rd, calinfo, redo=False, rms_cutoff=2):
     if not calinfo.calibrated:
         print(f"Calibrating {rd.state}")
         make_calibration(calinfo, redo=redo, rms_cutoff=rms_cutoff)
-        load_calibration(rd, calinfo)
         summarize_calibration(calinfo, redo=redo)
     else:
         print("Calibration already present")
+    if not rd.calibrated:
+        load_calibration(rd, calinfo)
+    else:
+        print("Calibration already loaded")
 
 
 def process(rd, calinfo, redo=False, rms_cutoff=0.2, dc=True):
