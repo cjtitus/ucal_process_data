@@ -88,7 +88,7 @@ def getAccuracyEstimates(energies, assignments, curvename="gain",
         _, _, rms = find_poly_residual(energies, peaks, polyorder, curvename)
         allRMS.append(rms)
     bestRMSIndex = np.argmin(allRMS)
-    bestRMS = polyRMS[bestRMSIndex]
+    bestRMS = allRMS[bestRMSIndex]
     bestPeaks = assignments[bestRMSIndex, :]
 
     return bestPeaks, bestRMS, allRMS
