@@ -2,7 +2,7 @@ import mass
 from mass.calibration.algorithms import line_names_and_energies
 import os
 from os import path
-import itertools
+from itertools import combinations
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
@@ -16,6 +16,7 @@ cal_line_master = {'ck': 278.21, 'nk': 392.25, 'tila': 452, 'ok': 524.45, 'fell'
 
 mass.line_models.VALIDATE_BIN_SIZE = False
 
+
 def get_line_energies(line_names):
     """
     Takes a list of strings or floats, and returns the line energies in
@@ -25,8 +26,9 @@ def get_line_energies(line_names):
     return line_energies
 
 
-def find_opt_assignment(peak_positions, line_names, nextra=2, nincrement=2,
-                        nextramax=4, rms_cutoff=0.2, polyorder=2, curvename="gain"):
+def assignPeaks(peak_positions, line_names, nextra=2, nincrement=2,
+                nextramax=4, rms_cutoff=0.2, polyorder=2,
+                autoinclude=1, curvename="gain", debug=False):
     """Tries to find an assignment of peaks to line names that is reasonably self consistent and smooth
 
     Args:
@@ -41,49 +43,84 @@ def find_opt_assignment(peak_positions, line_names, nextra=2, nincrement=2,
             failing with a ValueError saying "no peak assignment succeeded"
         rms_cutoff (float): an empirical number that determines if an assignment is good enough.
             The default number works reasonably well for NSLS-II data
+        autoinclude (int): Number of tallest peaks to include in all combinations
     """
+
     name_e, e_e = line_names_and_energies(line_names)
-    n_sel_pp = len(line_names) + nextra  # number of peak_positions to use to line up to line_names
+    energies = np.asarray(e_e, dtype="float")
+    n_sel = len(line_names) + nextra  # number of peaks to consider for fitting
     nmax = len(line_names) + nextramax
     while True:
-        sel_positions = np.asarray(peak_positions[:n_sel_pp], dtype="float")
-        energies = np.asarray(e_e, dtype="float")
-        assign = np.array(list(itertools.combinations(sel_positions, len(line_names))))
-        assign.sort(axis=1)
-        acc_est = []
+        sel_positions = np.asarray(peak_positions[:n_sel], dtype="float")
 
-        for n in range(assign.shape[0]):
-            _, _, rms = find_poly_residual(energies, assign[n, :], polyorder, curvename)
-            acc_est.append(rms)
-        opt_assign_i = np.argmin(acc_est)
-        acc = acc_est[opt_assign_i]
-        opt_assign = assign[opt_assign_i]
+        assign = getPeakCombinations(sel_positions, len(energies), autoinclude)
+        bestPeaks, bestRMS, allRMS = getAccuracyEstimates(energies, assign,
+                                                          curvename, polyorder)
 
-        if acc > rms_cutoff:
-            n_sel_pp += nincrement
-            if n_sel_pp > nmax:
-                print("no peak assignment succeeded: acc %g, rms_cutoff %g" %
-                      (acc, rms_cutoff))
-                return name_e, energies, list(opt_assign)
-                # raise ValueError("no peak assignment succeeded: acc %g, rms_cutoff %g" %
-                # (acc, rms_cutoff))
+        if bestRMS > rms_cutoff:
+            n_sel += nincrement
+            if n_sel > nmax:
+                print(f"no peak assignment succeeded: Best RMS: {bestRMS}, RMS Cutoff: {rms_cutoff}")
+                if debug:
+                    return name_e, energies, assign, allRMS
+                else:
+                    return name_e, energies, bestPeaks, bestRMS
             else:
                 continue
         else:
-            return name_e, energies, list(opt_assign)
+            if debug:
+                return name_e, energies, assign, allRMS
+            else:
+                return name_e, energies, bestPeaks, bestRMS
+
+
+def getAccuracyEstimates(energies, assignments, curvename="gain",
+                         maxPolyOrder=5):
+    """
+    energies : Physical energies of peaks
+    assignments : Array of possible peak combinations
+    curvename : input to find_poly_residual, assumed form of TES gain curve
+    maxPolyOrder : The maximum order of polynomial to be used to fit the peaks
+    """
+    polyorder = min(len(energies) - 2, maxPolyOrder)
+    allRMS = []
+    for peaks in assignments[:, ...]:
+        _, _, rms = find_poly_residual(energies, peaks, polyorder, curvename)
+        allRMS.append(rms)
+    bestRMSIndex = np.argmin(allRMS)
+    bestRMS = polyRMS[bestRMSIndex]
+    bestPeaks = assignments[bestRMSIndex, :]
+
+    return bestPeaks, bestRMS, allRMS
+
+
+def getPeakCombinations(positions, npeaks, autoinclude=1):
+    peakCombos = []
+    for combo in combinations(positions[autoinclude:], npeaks - autoinclude):
+        tmp = list(positions[:autoinclude])
+        tmp.extend(combo)
+        peakCombos.append(tmp)
+    peakCombos = np.array(peakCombos)
+    peakCombos.sort(axis=1)
+    return peakCombos
+
+
+def debugAssignment(ds, attr, states, ph_fwhm, line_names, assignment="nsls", **kwargs):
+    peak_ph_vals, _peak_heights = mass.algorithms.find_local_maxima(ds.getAttr(attr, indsOrStates=states), ph_fwhm)
 
 
 def ds_learnCalibrationPlanFromEnergiesAndPeaks(self, attr, states, ph_fwhm, line_names, assignment="nsls", **kwargs):
-    peak_ph_vals, _peak_heights = mass.algorithms.find_local_maxima(self.getAttr(attr, indsOrStates=states), ph_fwhm)
+    peak_positions, _peak_heights = mass.algorithms.find_local_maxima(self.getAttr(attr, indsOrStates=states), ph_fwhm)
     if assignment == "nsls":
-        _name_e, energies_out, opt_assignments = find_opt_assignment(peak_ph_vals,
-                                                                     line_names, rms_cutoff=1, **kwargs)
+        name_or_e, e_out, assignment, rms = assignPeaks(peak_positions,
+                                                        line_names, rms_cutoff=1,
+                                                        **kwargs)
     else:
-        _name_e, energies_out, opt_assignments = mass.algorithms.find_opt_assignment(peak_ph_vals,
-                                                                                     line_names, maxacc=0.1, **kwargs)
+        name_or_e, e_out, assignment = mass.algorithms.find_opt_assignment(peak_positions,
+                                                                           line_names, maxacc=0.1, **kwargs)
 
     self.calibrationPlanInit(attr)
-    for ph, name in zip(opt_assignments, _name_e):
+    for ph, name in zip(assignment, name_or_e):
         if type(name) == str:
             self.calibrationPlanAddPoint(ph, name, states=states)
         else:
