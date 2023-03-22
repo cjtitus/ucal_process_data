@@ -41,11 +41,11 @@ def calibrate(rd, calinfo, redo=False, rms_cutoff=2, **kwargs):
         print("Calibration already loaded")
 
 
-def process(rd, calinfo, redo=False, rms_cutoff=0.2, dc=True):
+def process(rd, calinfo, redo=False, rms_cutoff=0.2, dc=True, **cal_kwargs):
     if dc:
         drift_correct(rd)
         drift_correct(calinfo)
-    calibrate(rd, calinfo, redo=redo, rms_cutoff=rms_cutoff)
+    calibrate(rd, calinfo, redo=redo, rms_cutoff=rms_cutoff, **cal_kwargs)
 
 
 def save_tes_arrays(rd, overwrite=False):
