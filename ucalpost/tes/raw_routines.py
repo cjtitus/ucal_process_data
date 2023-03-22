@@ -24,14 +24,14 @@ def drift_correct(rd):
 
 
 # Need to determine when to re-calibrate
-def calibrate(rd, calinfo, redo=False, rms_cutoff=2):
+def calibrate(rd, calinfo, redo=False, rms_cutoff=2, **kwargs):
     """
     rd : A RawData object
     calinfo : a CalibrationInfo object
     """
-    if not calinfo.calibrated:
+    if not calinfo.calibrated or redo:
         print(f"Calibrating {rd.state}")
-        make_calibration(calinfo, redo=redo, rms_cutoff=rms_cutoff)
+        make_calibration(calinfo, redo=redo, rms_cutoff=rms_cutoff, **kwargs)
         summarize_calibration(calinfo, redo=redo)
     else:
         print("Calibration already present")

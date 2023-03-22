@@ -118,6 +118,7 @@ def ds_learnCalibrationPlanFromEnergiesAndPeaks(self, attr, states, ph_fwhm, lin
     else:
         name_or_e, e_out, assignment = mass.algorithms.find_opt_assignment(peak_positions,
                                                                            line_names, maxacc=0.1, **kwargs)
+        rms = None
 
     self.calibrationPlanInit(attr)
     for ph, name in zip(assignment, name_or_e):
@@ -127,6 +128,7 @@ def ds_learnCalibrationPlanFromEnergiesAndPeaks(self, attr, states, ph_fwhm, lin
             energy = name
             name = str(energy)
             self.calibrationPlanAddPoint(ph, name, states=states, energy=energy)
+    return e_out, assignment, rms
 
 mass.off.Channel.learnCalibrationPlanFromEnergiesAndPeaks = ds_learnCalibrationPlanFromEnergiesAndPeaks
 
@@ -189,11 +191,11 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, as
     # ds.diagnoseCalibration()
     for ds in data.values():
         try:
-            print(f"Calibrating {ds.channum}")
-            ds.learnCalibrationPlanFromEnergiesAndPeaks(attr=fv, ph_fwhm=50,
-                                                        states=cal_state,
-                                                        line_names=line_energies,
-                                                        assignment=assignment, **kwargs)
+            e_out, peaks, rms = ds.learnCalibrationPlanFromEnergiesAndPeaks(attr=fv, ph_fwhm=50,
+                                                                            states=cal_state,
+                                                                            line_names=line_energies,
+                                                                            assignment=assignment, **kwargs)
+            print(f"Calibrating {ds.channum} succeeded with rms: {rms}")
         except ValueError:
             print("Chan {ds.channum} failed peak assignment")
             ds.markBad("Failed peak assignment")
@@ -223,7 +225,7 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, as
             ds.markBad("ValueError on energy access, calibration curve is probably broken")
 
 
-def make_calibration(calinfo, savedir=None, redo=False, rms_cutoff=0.2):
+def make_calibration(calinfo, savedir=None, redo=False, rms_cutoff=0.2, **kwargs):
     # UUUUUUUUUGH need to make all the names make sense, maybe move this to
     # calibration file, obviously rename, since _calibrate is already a function
     attr = "filtValueDC" if calinfo.driftCorrected else "filtValue"
@@ -232,7 +234,7 @@ def make_calibration(calinfo, savedir=None, redo=False, rms_cutoff=0.2):
     if cal_file_name is not None and path.exists(cal_file_name) and not redo:
         pass
     else:
-        _calibrate(calinfo.data, calinfo.state, calinfo.line_names, fv=attr, rms_cutoff=rms_cutoff)
+        _calibrate(calinfo.data, calinfo.state, calinfo.line_names, fv=attr, rms_cutoff=rms_cutoff, **kwargs)
         calinfo._calibrated = True
         if cal_file_name is not None:
             if not path.exists(path.dirname(cal_file_name)):
@@ -251,7 +253,12 @@ def load_calibration(rd, calinfo):
 
 
 def summarize_calibration(calinfo, redo=False):
+    """
+    Should try to produce an overall summary
+    Also, splitting into panels sometimes makes it hard to figure out if we are globally misaligned
+    """
     savedir = calinfo.savefile[:-4] + '_summary'
+    print(f"Saving summaries to {savedir}")
     if not os.path.exists(savedir):
         os.makedirs(savedir)
     line_energies = get_line_energies(calinfo.line_names)
