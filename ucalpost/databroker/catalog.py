@@ -50,8 +50,7 @@ class WrappedDatabroker(WrappedCatalogBase):
             until = untildatetime.isoformat()
         beamtime_start_vals = self.search(Key("beamtime_start") > since).search(Key("beamtime_start") < until).list_meta_key_vals("beamtime_start")
         return self.filter_by_key("beamtime_start", beamtime_start_vals)
-        
-        
+
     def list_meta_key_vals(self, key):
         keys = key.split('.')
         vals = set()
@@ -106,8 +105,8 @@ class WrappedDatabroker(WrappedCatalogBase):
             print(f"Exporting run {run.metadata['start']['scan_id']}")
             export_run_to_analysis_catalog(run, **kwargs)
 
-    def process_tes(self):
-        process_catalog(self._catalog)
+    def process_tes(self, **kwargs):
+        process_catalog(self._catalog, **kwargs)
 
     def check_processed(self):
         for uid, run in self._catalog.items():

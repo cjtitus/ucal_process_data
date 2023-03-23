@@ -252,6 +252,38 @@ def load_calibration(rd, calinfo):
     rd._calmd = {"cal_state": calinfo.state, "cal_file": calinfo.cal_file}
 
 
+def _make_figure_axes(line_names, line_energies, figsize=None,
+                      title="Stacked calibration"):
+    naxes = len(line_names)
+    if figsize is None:
+        figsize = (2*naxes, 4)
+    fig = plt.figure(figsize=figsize)
+    fig.subplots_adjust(wspace=0)
+    axlist = fig.subplots(1, naxes, sharey=True)
+    for i in range(naxes):
+        name = line_names[i]
+        energy = line_energies[i]
+        axlist[i].set_xlim(energy - 20, energy + 20)
+        axlist[i].set_title(name)
+        axlist[i].axvline(energy)
+    fig.suptitle(title)
+    return fig, axlist
+
+
+def plot_ds_calibration(ds, state, line_energies,
+                        axlist, legend=True):
+    bins = np.arange(np.min(line_energies) - 50,
+                     np.max(line_energies) + 50, 1)
+    centers = 0.5*(bins[1:] + bins[:-1])
+    energies = ds.getAttr("energy", state)
+    counts, _ = np.histogram(energies, bins)
+
+    for ax in axlist:
+        ax.plot(centers, counts, label=f"Chan {ds.channum}")
+    if legend:
+        ax.legend()
+
+
 def summarize_calibration(calinfo, redo=False):
     """
     Should try to produce an overall summary
@@ -261,34 +293,36 @@ def summarize_calibration(calinfo, redo=False):
     print(f"Saving summaries to {savedir}")
     if not os.path.exists(savedir):
         os.makedirs(savedir)
-    line_energies = get_line_energies(calinfo.line_names)
+    line_names = calinfo.line_names
+    line_energies = get_line_energies(line_names)
     nstack = 7
     naxes = len(calinfo.line_names)
+    bigfig, bigaxlist = _make_figure_axes(line_names, line_energies,
+                                          figsize=(3*naxes, 6),
+                                          title="All ds calibration stacked")
+    fig, axlist = _make_figure_axes(line_names, line_energies)
     for n, chan in enumerate(calinfo.data):
         ds = calinfo.data[chan]
-        energies = ds.getAttr("energy", calinfo.state)
-        bins = np.arange(200, 1000, 1)
-        centers = 0.5*(bins[1:] + bins[:-1])
-        counts, _ = np.histogram(energies, bins)
+        plot_ds_calibration(ds, calinfo.state, line_energies, axlist)
+        plot_ds_calibration(ds, calinfo.state, line_energies, bigaxlist,
+                            legend=False)
+        lastchan = chan
         # work in progress
-        if n % nstack == 0:
+        if int(chan) - 1 % nstack == 0:
             if n != 0:
-                filename = f"cal_{firstchan}_to_{chan}.png"
+                filename = f"cal_{firstchan}_to_{lastchan}.png"
                 savename = os.path.join(savedir, filename)
                 if not os.path.exists(savename) or redo:
                     fig.savefig(savename)
                 plt.close(fig)
-            fig = plt.figure(figsize=(2*naxes, 4))
-            fig.subplots_adjust(wspace=0)
-            axlist = fig.subplots(1, naxes, sharey=True)
-            for i in range(naxes):
-                name = calinfo.line_names[i]
-                energy = line_energies[i]
-                axlist[i].set_xlim(energy - 20, energy + 20)
-                axlist[i].set_title(name)
-                axlist[i].axvline(energy)
-            fig.suptitle("Stacked calibration")
+                fig, axlist = _make_figure_axes(line_names, line_energies)
             firstchan = chan
-        for ax in axlist:
-            ax.plot(centers, counts, label=f"Chan {chan}")
-        ax.legend()
+            lastchan = None
+    bigfig.savefig(os.path.join(savedir, "cal_summary_all_chan.png"))
+    plt.close(bigfig)
+    if lastchan is not None:
+        filename = f"cal_{firstchan}_to_{lastchan}.png"
+        savename = os.path.join(savedir, filename)
+        if not os.path.exists(savename) or redo:
+            fig.savefig(savename)
+    plt.close(fig)
