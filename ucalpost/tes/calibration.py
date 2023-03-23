@@ -301,23 +301,23 @@ def summarize_calibration(calinfo, redo=False):
                                           figsize=(3*naxes, 6),
                                           title="All ds calibration stacked")
     fig, axlist = _make_figure_axes(line_names, line_energies)
+    startchan = 1
     for n, chan in enumerate(calinfo.data):
+        if chan > startchan + nstack:
+            filename = f"cal_{startchan}_to_{startchan + nstack}.png"
+            savename = os.path.join(savedir, filename)
+            if not os.path.exists(savename) or redo:
+                fig.savefig(savename)
+            plt.close(fig)
+            fig, axlist = _make_figure_axes(line_names, line_energies)
+            firstchan = startchan + nstack + 1
+
         ds = calinfo.data[chan]
         plot_ds_calibration(ds, calinfo.state, line_energies, axlist)
         plot_ds_calibration(ds, calinfo.state, line_energies, bigaxlist,
                             legend=False)
         lastchan = chan
         # work in progress
-        if int(chan) - 1 % nstack == 0:
-            if n != 0:
-                filename = f"cal_{firstchan}_to_{lastchan}.png"
-                savename = os.path.join(savedir, filename)
-                if not os.path.exists(savename) or redo:
-                    fig.savefig(savename)
-                plt.close(fig)
-                fig, axlist = _make_figure_axes(line_names, line_energies)
-            firstchan = chan
-            lastchan = None
     bigfig.savefig(os.path.join(savedir, "cal_summary_all_chan.png"))
     plt.close(bigfig)
     if lastchan is not None:
