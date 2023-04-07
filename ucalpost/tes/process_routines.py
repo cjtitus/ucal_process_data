@@ -53,15 +53,14 @@ class AnalysisLoader:
         return self.rd, self.ci
 
 
-def process_run(run, loader=None, cal=None, **kwargs):
+def process_run(run, loader=None, cal=None, redo=False, overwrite=False, **kwargs):
     if loader is None:
         loader = AnalysisLoader()
     rd, calinfo = loader.getAnalysisObjects(run, cal)
     print(f"Processing {rd.off_filename}, state: {rd.state}")
-    process(rd, calinfo, **kwargs)
+    process(rd, calinfo, redo=redo, overwrite=overwrite, **kwargs)
     print(f"Saving TES Arrays to {rd.savefile}")
-    save_tes_arrays(rd)
-    save_tes_arrays(calinfo)
+    save_tes_arrays(rd, overwrite=overwrite)
 
 
 def process_catalog(catalog, **kwargs):

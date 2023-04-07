@@ -96,10 +96,13 @@ def getAccuracyEstimates(energies, assignments, curvename="gain",
 
 def getPeakCombinations(positions, npeaks, autoinclude=1):
     peakCombos = []
-    for combo in combinations(positions[autoinclude:], npeaks - autoinclude):
-        tmp = list(positions[:autoinclude])
-        tmp.extend(combo)
-        peakCombos.append(tmp)
+    if autoinclude == npeaks:
+        peakCombos.append(list(positions[:autoinclude]))
+    else:
+        for combo in combinations(positions[autoinclude:], npeaks - autoinclude):
+            tmp = list(positions[:autoinclude])
+            tmp.extend(combo)
+            peakCombos.append(tmp)
     peakCombos = np.array(peakCombos)
     peakCombos.sort(axis=1)
     return peakCombos
@@ -195,7 +198,8 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, as
                                                                             states=cal_state,
                                                                             line_names=line_energies,
                                                                             assignment=assignment, **kwargs)
-            print(f"Calibrating {ds.channum} succeeded with rms: {rms}")
+            if rms < rms_cutoff:
+                print(f"Calibrating {ds.channum} succeeded with rms: {rms}")
         except ValueError:
             print("Chan {ds.channum} failed peak assignment")
             ds.markBad("Failed peak assignment")
@@ -225,13 +229,13 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, as
             ds.markBad("ValueError on energy access, calibration curve is probably broken")
 
 
-def make_calibration(calinfo, savedir=None, redo=False, rms_cutoff=0.2, **kwargs):
+def make_calibration(calinfo, savedir=None, overwrite=False, rms_cutoff=0.2, **kwargs):
     # UUUUUUUUUGH need to make all the names make sense, maybe move this to
     # calibration file, obviously rename, since _calibrate is already a function
     attr = "filtValueDC" if calinfo.driftCorrected else "filtValue"
 
     cal_file_name = calinfo.cal_file
-    if cal_file_name is not None and path.exists(cal_file_name) and not redo:
+    if cal_file_name is not None and path.exists(cal_file_name) and not overwrite:
         pass
     else:
         _calibrate(calinfo.data, calinfo.state, calinfo.line_names, fv=attr, rms_cutoff=rms_cutoff, **kwargs)
@@ -251,9 +255,78 @@ def load_calibration(rd, calinfo):
     rd._calibrated = True
     rd._calmd = {"cal_state": calinfo.state, "cal_file": calinfo.cal_file}
 
+from matplotlib.gridspec import GridSpec
 
-def _make_figure_axes(line_names, line_energies, figsize=None,
-                      title="Stacked calibration"):
+class CalFigure:
+    def __init__(self, line_names, line_energies, figsize=None,
+                 title="Stacked calibration"):
+        naxes = len(line_names)
+        self.line_names = line_names
+        self.line_energies = line_energies
+        if figsize is None:
+            figsize = (2*naxes, 8)
+        self.fig = plt.figure(figsize=figsize)
+        self.fig.subplots_adjust(wspace=0)
+        gs = GridSpec(2, naxes)
+        self.panel = self.fig.add_subplot(gs[0, :])
+        self.axlist = [self.fig.add_subplot(gs[1, 0])]
+        for n in range(1, naxes):
+            ax = self.fig.add_subplot(gs[1, n])
+            ax.set_yticks([])
+            self.axlist.append(ax)
+        for i in range(naxes):
+            name = line_names[i]
+            energy = line_energies[i]
+            self.axlist[i].set_xlim(energy - 20, energy + 20)
+            self.axlist[i].set_title(name)
+            self.axlist[i].axvline(energy)
+            self.panel.axvline(energy)
+        self.fig.suptitle(title)
+
+    def plot_ds_calibration(self, ds, state,
+                            legend=True):
+        bins = np.arange(np.min(self.line_energies) - 50,
+                         np.max(self.line_energies) + 50, 1)
+        centers = 0.5*(bins[1:] + bins[:-1])
+        energies = ds.getAttr("energy", state)
+        counts, _ = np.histogram(energies, bins)
+        max_ylim = 0
+        for ax in self.axlist:
+            ax.plot(centers, counts, label=f"Chan {ds.channum}")
+            max_ylim = max(max_ylim, ax.get_ylim()[1])
+        for ax in self.axlist:
+            ax.set_ylim(0, max_ylim)
+        self.panel.plot(centers, counts, label=f"Chan {ds.channum}")
+        if legend:
+            self.panel.legend()
+
+    def save(self, savename, close=True):
+        self.fig.savefig(savename)
+        if close:
+            self.close()
+
+    def close(self):
+        plt.close(self.fig)
+        
+def _make_panel_figure(line_names, line_energies, figsize=None,
+                       title="Stacked calibration"):
+    naxes = len(line_names)
+    if figsize is None:
+        figsize = (2*naxes, 4)
+    fig = plt.figure(figsize=figsize)
+    fig.subplots_adjust(wspace=0)
+    axlist = fig.subplots(1, naxes, sharey=True)
+    for i in range(naxes):
+        name = line_names[i]
+        energy = line_energies[i]
+        axlist[i].set_xlim(energy - 20, energy + 20)
+        axlist[i].set_title(name)
+        axlist[i].axvline(energy)
+    fig.suptitle(title)
+    return fig, axlist
+
+def _make_single_figure(line_names, line_energies, figsize=None,
+                        title="Stacked calibration"):
     naxes = len(line_names)
     if figsize is None:
         figsize = (2*naxes, 4)
@@ -284,7 +357,7 @@ def plot_ds_calibration(ds, state, line_energies,
         ax.legend()
 
 
-def summarize_calibration(calinfo, redo=False):
+def summarize_calibration(calinfo, overwrite=False):
     """
     Should try to produce an overall summary
     Also, splitting into panels sometimes makes it hard to figure out if we are globally misaligned
@@ -295,34 +368,34 @@ def summarize_calibration(calinfo, redo=False):
         os.makedirs(savedir)
     line_names = calinfo.line_names
     line_energies = get_line_energies(line_names)
-    nstack = 7
+    nstack = 8
     naxes = len(calinfo.line_names)
-    bigfig, bigaxlist = _make_figure_axes(line_names, line_energies,
-                                          figsize=(3*naxes, 6),
-                                          title="All ds calibration stacked")
-    fig, axlist = _make_figure_axes(line_names, line_energies)
+    bigfig = CalFigure(line_names, line_energies,
+                       figsize=(3*naxes, 6),
+                       title="All ds calibration stacked")
+    fig = CalFigure(line_names, line_energies)
     startchan = 1
     for n, chan in enumerate(calinfo.data):
-        if chan > startchan + nstack:
-            filename = f"cal_{startchan}_to_{startchan + nstack}.png"
+        if chan > startchan + nstack - 1:
+            filename = f"cal_{startchan}_to_{startchan + nstack - 1}.png"
             savename = os.path.join(savedir, filename)
-            if not os.path.exists(savename) or redo:
-                fig.savefig(savename)
-            plt.close(fig)
-            fig, axlist = _make_figure_axes(line_names, line_energies)
-            firstchan = startchan + nstack + 1
+            if not os.path.exists(savename) or overwrite:
+                fig.save(savename)
+            else:
+                fig.close()
+            fig = CalFigure(line_names, line_energies)
+            startchan = startchan + nstack
 
         ds = calinfo.data[chan]
-        plot_ds_calibration(ds, calinfo.state, line_energies, axlist)
-        plot_ds_calibration(ds, calinfo.state, line_energies, bigaxlist,
-                            legend=False)
+        bigfig.plot_ds_calibration(ds, calinfo.state, legend=False)
+        fig.plot_ds_calibration(ds, calinfo.state)
         lastchan = chan
         # work in progress
-    bigfig.savefig(os.path.join(savedir, "cal_summary_all_chan.png"))
-    plt.close(bigfig)
-    if lastchan is not None:
-        filename = f"cal_{firstchan}_to_{lastchan}.png"
-        savename = os.path.join(savedir, filename)
-        if not os.path.exists(savename) or redo:
-            fig.savefig(savename)
-    plt.close(fig)
+    bigfig.save(os.path.join(savedir, "cal_summary_all_chan.png"))
+
+    filename = f"cal_{startchan}_to_{lastchan}.png"
+    savename = os.path.join(savedir, filename)
+    if not os.path.exists(savename) or overwrite:
+        fig.save(savename)
+    else:
+        fig.close()
