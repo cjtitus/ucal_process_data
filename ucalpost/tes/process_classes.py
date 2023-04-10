@@ -126,8 +126,12 @@ def log_from_json(logname):
 
 
 def log_from_run(run):
-    start_time = run.primary['timestamps']['tes_tfy'].read()
-    acquire_time = run.primary.descriptors[0]['configuration']['tes']['data']['tes_acquire_time']
+    try:
+        start_time = run.primary['timestamps']['tes_tfy'].read()
+    except KeyError:
+        start_time = run.primary['timestamps']['time'].read()
+    #acquire_time = run.primary.descriptors[0]['configuration']['tes']['data']['tes_acquire_time']
+    acquire_time = run.primary['config']['tes']['tes_acquire_time'].read()[0]
     stop_time = start_time + acquire_time
     if run.metadata['start']['scantype'] in ['calibration', 'xes']:
         motor_name = "time"

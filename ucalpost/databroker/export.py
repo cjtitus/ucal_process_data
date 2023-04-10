@@ -75,7 +75,7 @@ def get_run_header(run):
     return metadata
 
 
-def get_run_data(run):
+def get_run_data(run, exportArrayData=False):
 
     natural_order = ["Seconds", "MONO", "ENERGY_ENC", "I0", "I1", "REF", "SC",
                      "tfy"]
@@ -90,7 +90,9 @@ def get_run_data(run):
     datadict = {}
     for key in run.primary.data:
         newkey = convert_names(key)
-        datadict[newkey] = run.primary.data[key][:]
+        data = run.primary.data[key][:]
+        if len(data.shape) == 1 or exportArrayData:
+            datadict[newkey] = data
     if 'Seconds' not in datadict:
         datadict['Seconds'] = np.zeros_like(datadict[newkey]) + exposure
     for k in natural_order:

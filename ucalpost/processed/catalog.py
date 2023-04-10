@@ -4,7 +4,7 @@ A module to deal with fully-processed xastools-like spectra
 from ..tools.catalog import WrappedCatalogBase
 from tiled.queries import Key
 from functools import reduce
-
+import datetime
 
 def subcatalog_input_transformer(arg):
     if arg is True:
@@ -47,6 +47,19 @@ class WrappedAnalysis(WrappedCatalogBase):
 
     def filter(self, samples=None, groups=None, edges=None):
         return super().filter(samples=samples, groups=groups, edges=edges)
+
+    def get_beamtime(self, since, until=None):
+        """
+        since : iso formatted date string
+        until : optional, iso formatted date string
+        """
+        if until is None:
+            startdate = datetime.datetime.fromisoformat(since)
+            defaultdelta = datetime.timedelta(days=1)
+            untildatetime = startdate + defaultdelta
+            until = untildatetime.isoformat()
+        beamtime_start_vals = self.search(Key("scaninfo.beamtime_start") > since).search(Key("scaninfo.beamtime_start") < until).list_meta_key_vals("scaninfo.beamtime_start")
+        return self.filter_by_key("scaninfo.beamtime_start", beamtime_start_vals)
 
     def summarize(self):
         for h in self._catalog.values():
