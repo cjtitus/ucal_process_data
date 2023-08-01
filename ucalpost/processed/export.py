@@ -11,13 +11,13 @@ def xas_to_directory(xas):
     return basepath
 
 
-def export_catalog_to_yaml(catalog, folder=None, namefmt=None, subcatalogs=True, **export_kwargs):
+def export_catalog_to_yaml(catalog, folder=None, namefmt=None, subcatalogs=True, individual=False, **export_kwargs):
     """
     norm : If present, a column to normalize by
     offsetMono : If True, shift mono
     """
 
-    xaslist = catalog.get_xas(subcatalogs=subcatalogs)
+    xaslist = catalog.get_xas(subcatalogs=subcatalogs, individual=individual)
 
     for xas in iterfy(xaslist):
         if folder is None:
@@ -30,8 +30,8 @@ def export_catalog_to_yaml(catalog, folder=None, namefmt=None, subcatalogs=True,
         exportXASToYaml(xas, folder, namefmt=namefmt, **export_kwargs)
 
 
-def export_catalog_to_ssrl(catalog, folder=None, namefmt=None, subcatalogs=True, **export_kwargs):
-    xaslist = catalog.get_xas(subcatalogs=subcatalogs)
+def export_catalog_to_ssrl(catalog, folder=None, namefmt=None, subcatalogs=True, individual=False, **export_kwargs):
+    xaslist = catalog.get_xas(subcatalogs=subcatalogs, individual=individual)
 
     for xas in iterfy(xaslist):
         if folder is None:

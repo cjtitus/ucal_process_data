@@ -95,7 +95,7 @@ class WrappedAnalysis(WrappedCatalogBase):
                 for edge, edge_list in sample_dict.items():
                     print(f"Edge: {edge}, Scans: {edge_list}")
 
-    def get_xas(self, sample=None, subcatalogs=True):
+    def get_xas(self, sample=None, subcatalogs=True, individual=False):
         """
         sample: simple pre-filter by a sample name
         subcatalogs: Bool or dictionary. If dictionary, passed as kwargs to
@@ -103,7 +103,10 @@ class WrappedAnalysis(WrappedCatalogBase):
         """
         if sample is not None:
             catalog = self.filter_by_samples([sample])
-            return catalog.get_xas(subcatalogs=subcatalogs)
+            return catalog.get_xas(subcatalogs=subcatalogs, individual=individual)
+        if individual:
+            xas = [v.to_xas() for v in self._catalog.values()]
+            return xas
         if subcatalogs is not False:
             catalogs = self.get_subcatalogs(**subcatalog_input_transformer(subcatalogs))
             xas = [c.get_xas(subcatalogs=False) for c in catalogs]

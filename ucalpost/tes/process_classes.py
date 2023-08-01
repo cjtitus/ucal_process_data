@@ -1,7 +1,8 @@
 import numpy as np
 import os
+from os.path import exists, join, basename
 import json
-from ..databroker.run import get_save_directory, get_tes_state, get_logname
+from ..databroker.run import get_save_directory, get_tes_state, get_logname, get_filename
 
 
 """
@@ -115,11 +116,14 @@ def data_from_file(filename):
     return ProcessedData(timestamps, energies, channels)
 
 
-def log_from_json(logname):
+def log_from_json(run):
+    logname = get_logname(run)
     with open(logname, 'r') as f:
         log = json.load(f)
     start_time = log['epoch_time_start_s']
-    stop_time = log['epoch_time_end_s']
+    acquire_time = run.primary['config']['tes']['tes_acquire_time'].read()[0]
+    stop_time = start_time + acquire_time
+    # stop_time = log['epoch_time_end_s']
     motor_name = log['var_name']
     motor_vals = log['var_values']
     return LogData(start_time, stop_time, motor_name, motor_vals)
@@ -142,20 +146,31 @@ def log_from_run(run):
     return LogData(start_time, stop_time, motor_name, motor_vals)
 
 
-def scandata_from_run(run):
+def scandata_from_run(run, logtype='json'):
     filename = get_analyzed_filename(run)
-    # logname = get_logname(run)
+    if not exists(filename):
+        filename = get_analyzed_filename_old(run)
     data = data_from_file(filename)
-    log = log_from_run(run)
+    if logtype == 'run':
+        log = log_from_run(run)
+    else:
+        log = log_from_json(run)
     return ScanData(data, log)
 
 
-def get_analyzed_filename(run):
+def get_analyzed_filename_old(run):
     data_directory = get_save_directory(run)
     state = get_tes_state(run)
-    filename = os.path.join(data_directory, f"tes_{state}.npz")
+    filename = join(data_directory, f"tes_{state}.npz")
     return filename
 
+
+def get_analyzed_filename(run):
+    savedir = get_save_directory(run)
+    prefix = "_".join(basename(get_filename(run)).split('_')[:2])
+    state = get_tes_state(run)
+    return join(savedir, f"{prefix}_{state}.npz")
+    
 
 def is_run_processed(run):
     filename = get_analyzed_filename(run)
