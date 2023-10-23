@@ -187,12 +187,13 @@ def find_poly_residual(cal_energies, opt_assignment, degree, curvename="gain"):
     return coeff, residual, residual_rms
 
 
-def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, assignment="nsls", recipeName="energy", **kwargs):
-    data.setDefaultBinsize(0.2)
+def data_calibrate(self, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2,
+                   assignment="nsls", recipeName="energy", **kwargs):
+    self.setDefaultBinsize(0.2)
     # ds.plotHist(np.arange(0,30000,10), fv, states=None)
     line_energies = get_line_energies(line_names)
     # ds.diagnoseCalibration()
-    for ds in data.values():
+    for ds in self.values():
         try:
             e_out, peaks, rms = ds.learnCalibrationPlanFromEnergiesAndPeaks(attr=fv, ph_fwhm=50,
                                                                             states=cal_state,
@@ -204,17 +205,17 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, as
             print("Chan {ds.channum} failed peak assignment")
             ds.markBad("Failed peak assignment")
 
-    # data.alignToReferenceChannel(ds, fv, np.arange(1000, 27000,  10))
-    data.calibrateFollowingPlan(fv, calibratedName=recipeName, dlo=7, dhi=7,
+    # self.alignToReferenceChannel(ds, fv, np.arange(1000, 27000,  10))
+    self.calibrateFollowingPlan(fv, calibratedName=recipeName, dlo=7, dhi=7,
                                 overwriteRecipe=True)
-    for ds in data.values():
+    for ds in self.values():
         # ds.calibrateFollowingPlan(fv, overwriteRecipe=True, dlo=7, dhi=7)
 
         ecal = ds.recipes[recipeName].f
         degree = min(len(ecal._ph) - 1, 2)
         _, _, rms = find_poly_residual(ecal._energies, ecal._ph, degree, 'gain')
         if np.any(ecal._ph < 0):
-            msg = f"Failed calibration with ph < 0"
+            msg = "Failed calibration with ph < 0"
             print(msg)
             ds.markBad(msg)
             continue
@@ -229,24 +230,42 @@ def _calibrate(data, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2, as
             ds.markBad("ValueError on energy access, calibration curve is probably broken")
 
 
-def make_calibration(calinfo, savedir=None, overwrite=False, rms_cutoff=0.2, **kwargs):
-    # UUUUUUUUUGH need to make all the names make sense, maybe move this to
-    # calibration file, obviously rename, since _calibrate is already a function
+mass.off.ChannelGroup.calibrate = data_calibrate
+
+
+def make_calibration(calinfo, savedir=None, overwrite=False, rms_cutoff=0.2,
+                     cal_file_name=None, **kwargs):
     attr = "filtValueDC" if calinfo.driftCorrected else "filtValue"
 
-    cal_file_name = calinfo.cal_file
-    if cal_file_name is not None and path.exists(cal_file_name) and not overwrite:
-        pass
-    else:
-        _calibrate(calinfo.data, calinfo.state, calinfo.line_names, fv=attr, rms_cutoff=rms_cutoff, **kwargs)
+    if cal_file_name is None:
+        cal_file_name = calinfo.cal_file
+
+    if should_make_new_calibration(cal_file_name, overwrite):
+        calinfo.data.calibrate(calinfo.state, calinfo.line_names, fv=attr,
+                               rms_cutoff=rms_cutoff, **kwargs)
         calinfo._calibrated = True
-        if cal_file_name is not None:
-            if not path.exists(path.dirname(cal_file_name)):
-                os.makedirs(path.dirname(cal_file_name))
-            calinfo.data.calibrationSaveToHDF5Simple(cal_file_name)
-            calinfo.cal_file = cal_file_name
+        save_calibration(calinfo, cal_file_name)
     if not calinfo.calibrated:
         load_calibration(calinfo, calinfo)
+
+
+def should_make_new_calibration(cal_file_name, overwrite):
+    """
+    Returns True if we should make a new calibration
+    Returns False if a calibration exists and we are not overwriting it
+    """
+    if cal_file_name is not None and path.exists(cal_file_name) and not overwrite:
+        return False
+    else:
+        return True
+
+
+def save_calibration(calinfo, cal_file_name):
+    if cal_file_name is not None:
+        if not path.exists(path.dirname(cal_file_name)):
+            os.makedirs(path.dirname(cal_file_name))
+        calinfo.data.calibrationSaveToHDF5Simple(cal_file_name)
+        calinfo.cal_file = cal_file_name
 
 
 def load_calibration(rd, calinfo):

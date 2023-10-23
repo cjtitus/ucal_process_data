@@ -1,4 +1,4 @@
-from databroker.queries import TimeRange, In, Key
+from databroker.queries import TimeRange, In, Key, NotIn
 from abc import ABC, abstractmethod
 from .utils import iterfy
 
@@ -59,6 +59,9 @@ class WrappedCatalogBase(ABC):
 
     def filter_by_key(self, key, values):
         return self.search(In(key, list(iterfy(values))))
+
+    def exclude_by_key(self, key, values):
+        return self.search(NotIn(key, list(iterfy(values))))
 
     def _get_subcatalogs(self, **kwargs):
         subcatalogs = []
