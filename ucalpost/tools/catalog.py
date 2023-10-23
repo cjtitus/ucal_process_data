@@ -48,6 +48,9 @@ class WrappedCatalogBase(ABC):
             self.__class__._make_filter_function(function_key, catalog_key)
             self.__class__._make_list_function(function_key, catalog_key)
 
+    def __getitem__(self, key):
+        return self._catalog[key]
+    
     def values(self):
         return self._catalog.values()
 
