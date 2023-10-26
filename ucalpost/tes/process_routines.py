@@ -66,4 +66,8 @@ def process_run(run, loader=None, cal=None, redo=False, overwrite=False, **kwarg
 def process_catalog(catalog, **kwargs):
     loader = AnalysisLoader()
     for run in catalog.values():
-        process_run(run, loader, **kwargs)
+        try:
+            process_run(run, loader, **kwargs)
+        except Error as e:
+            print("Problem processing {run}")
+            raise e
