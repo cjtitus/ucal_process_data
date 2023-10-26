@@ -3,7 +3,7 @@ import os
 from os.path import exists, join, basename
 import json
 from ..databroker.run import get_save_directory, get_tes_state, get_logname, get_filename
-
+import matplotlib.pyplot as plt
 
 """
 Module for loading and working with processed energy/timestamp data
@@ -158,6 +158,18 @@ def scandata_from_run(run, logtype='json'):
     return ScanData(data, log)
 
 
+def plotScan1d(run, llim, ulim, channels=None, logtype='json'):
+    sd = scandata_from_run(run, logtype)
+    y, x = sd.getScan1d(llim, ulim, channels)
+    plt.plot(x, y)
+
+
+def plotScan2d(run, llim, ulim, eres=0.3, channels=None, logtype='json'):
+    sd = scandata_from_run(run, logtype)
+    c, m, e = sd.getScan2d(llim, ulim, eres, channels)
+    plt.contourf(m, e, c)
+
+
 def get_analyzed_filename_old(run):
     data_directory = get_save_directory(run)
     state = get_tes_state(run)
@@ -170,7 +182,7 @@ def get_analyzed_filename(run):
     prefix = "_".join(basename(get_filename(run)).split('_')[:2])
     state = get_tes_state(run)
     return join(savedir, f"{prefix}_{state}.npz")
-    
+
 
 def is_run_processed(run):
     filename = get_analyzed_filename(run)
