@@ -2,6 +2,8 @@ from tiled.client import from_profile
 from os import path
 from databroker.queries import TimeRange
 import datetime
+import numpy as np
+
 
 db = from_profile("ucal")
 
@@ -69,7 +71,10 @@ def get_line_names(cal_run):
         return cal_run.start['cal_lines']
     samplename = get_samplename(cal_run)
     if samplename == 'mixv1':
-        return ["ck", "nk", "ok", "fela", "nila", "cula"]
+        energy = cal_run.start.get('calibration_energy', 980)
+        line_energies = np.array([300, 400, 525, 715, 840, 930, 1020])
+        line_names = np.array(['ck', 'nk', 'ok', 'fela', 'nila', 'cula', 'znla'])
+        return list(line_names[line_energies < energy])
     else:
         return ["ck", "nk", "ok", "fela", "nila", "cula"]
 
