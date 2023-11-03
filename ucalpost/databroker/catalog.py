@@ -81,6 +81,7 @@ class WrappedDatabroker(WrappedCatalogBase):
         samples = self.list_samples()
         groups = self.list_groups()
         times = self.list_meta_key_vals("time")
+        scans = self.list_meta_key_vals("scan_id")
         start = datetime.datetime.fromtimestamp(min(times)).isoformat()
         stop = datetime.datetime.fromtimestamp(max(times)).isoformat()
         print(f"Catalog contains {nruns} runs")
@@ -89,6 +90,27 @@ class WrappedDatabroker(WrappedCatalogBase):
         print(f"Contains samples {samples}")
 
     def summarize(self):
+        noise_catalogs = self.get_subcatalogs(True, False, False, False)
+        for c in noise_catalogs:
+            print("Noise Catalog...")
+            ntimes = c.list_meta_key_vals("time")
+            nstart = datetime.datetime.fromtimestamp(min(ntimes)).isoformat()
+            nstop = datetime.datetime.fromtimestamp(max(ntimes)).isoformat()
+            print(f"From {nstart} to {nstop}")
+            group_catalogs = self.get_subcatalogs(False, True, False, False)
+            for g in group_catalogs:
+                group = self.list_groups()[0]
+                print(f"Group {group}:")
+                gtimes = g.list_meta_key_vals("time")
+                gstart = datetime.datetime.fromtimestamp(min(gtimes)).isoformat()
+                gstop = datetime.datetime.fromtimestamp(max(gtimes)).isoformat()
+                print(f"From {gstart} to {gstop}")
+                samples = self.list_samples()
+                print(f"Contains samples {samples}")
+                edges = self.list_edges()
+                print(f"measured at {edges} edge")
+
+    def list_all_runs(self):
         groupname = ""
         for uid, run in self._catalog.items():
             group = run.metadata['start'].get('group', '')

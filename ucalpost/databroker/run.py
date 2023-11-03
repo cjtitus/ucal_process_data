@@ -74,6 +74,10 @@ def get_line_names(cal_run):
         return ["ck", "nk", "ok", "fela", "nila", "cula"]
 
 
+def get_cal_id(run):
+    return run.start['last_cal']
+
+
 def get_cal(run):
     return db[run.start['last_cal']]
 

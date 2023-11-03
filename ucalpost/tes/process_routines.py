@@ -1,5 +1,6 @@
+import numpy as np
 from ..databroker.run import (get_filename, get_cal, get_tes_state,
-                              get_line_names, get_save_directory)
+                              get_line_names, get_save_directory, get_cal_id)
 from .raw_classes import RawData, CalibrationInfo
 from .raw_routines import process, save_tes_arrays
 from .process_classes import get_analyzed_filename
@@ -63,7 +64,25 @@ def process_run(run, loader=None, cal=None, redo=False, overwrite=False, **kwarg
     save_tes_arrays(rd, overwrite=overwrite)
 
 
-def process_catalog(catalog, **kwargs):
+def process_catalog(catalog, skip_bad_ADR=True, **kwargs):
     loader = AnalysisLoader()
-    for run in catalog.values():
-        process_run(run, loader, **kwargs)
+    noise_catalogs = catalog.get_subcatalogs(True, False, False, False)
+    for ncat in noise_catalogs:
+        scans = ncat.get_meta_key_vals('scan_id')
+        smin = np.min(scans)
+        smax = np.max(scans)
+        print(f"Processing from {smin} to {smax}")
+        cal_ids = ncat.get_meta_key_vals('last_cal')
+        default_cal = cal_ids[0]
+        for run in ncat.values():
+            if skip_bad_ADR:
+                try:
+                    last_adr_value = run.baseline['data']['adr_heater'][1]
+                except KeyError:
+                    print(f"run {run.start['scan_id']} has no ADR data in baseline, but ADR check was requested, aborting")
+                    raise
+                if last_adr_value < 0.1:
+                    print("Last ADR magnet value for run {run.start['scan_id']} was {last_adr_value}, skipping")
+                    continue
+            cal = ncat[get_cal_id(run, default_cal)]
+            process_run(run, loader, cal, **kwargs)

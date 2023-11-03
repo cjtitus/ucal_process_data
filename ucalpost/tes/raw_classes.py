@@ -4,7 +4,6 @@ import os
 import mass
 import mass.off
 from mass.off import getOffFileListFromOneFile as getOffList
-from .calibration import _calibrate
 import h5py
 
 
