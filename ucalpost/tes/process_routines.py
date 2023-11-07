@@ -68,12 +68,12 @@ def process_catalog(catalog, skip_bad_ADR=True, **kwargs):
     loader = AnalysisLoader()
     noise_catalogs = catalog.get_subcatalogs(True, False, False, False)
     for ncat in noise_catalogs:
-        scans = ncat.get_meta_key_vals('scan_id')
+        scans = ncat.list_meta_key_vals('scan_id')
         smin = np.min(scans)
         smax = np.max(scans)
         print(f"Processing from {smin} to {smax}")
-        cal_ids = ncat.get_meta_key_vals('last_cal')
-        default_cal = cal_ids[0]
+        cal_ids = ncat.list_meta_key_vals('last_cal')
+        default_cal = list(cal_ids)[0]
         for run in ncat.values():
             if skip_bad_ADR:
                 try:

@@ -79,8 +79,11 @@ def get_line_names(cal_run):
         return ["ck", "nk", "ok", "fela", "nila", "cula"]
 
 
-def get_cal_id(run):
-    return run.start['last_cal']
+def get_cal_id(run, default=None):
+    cal_id = run.start['last_cal']
+    if cal_id is None:
+        return default
+    return cal_id
 
 
 def get_cal(run):

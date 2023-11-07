@@ -97,17 +97,17 @@ class WrappedDatabroker(WrappedCatalogBase):
             nstart = datetime.datetime.fromtimestamp(min(ntimes)).isoformat()
             nstop = datetime.datetime.fromtimestamp(max(ntimes)).isoformat()
             print(f"From {nstart} to {nstop}")
-            group_catalogs = self.get_subcatalogs(False, True, False, False)
+            group_catalogs = c.get_subcatalogs(False, True, False, False)
             for g in group_catalogs:
-                group = self.list_groups()[0]
+                group = list(g.list_groups())[0]
                 print(f"Group {group}:")
                 gtimes = g.list_meta_key_vals("time")
                 gstart = datetime.datetime.fromtimestamp(min(gtimes)).isoformat()
                 gstop = datetime.datetime.fromtimestamp(max(gtimes)).isoformat()
                 print(f"From {gstart} to {gstop}")
-                samples = self.list_samples()
+                samples = g.list_samples()
                 print(f"Contains samples {samples}")
-                edges = self.list_edges()
+                edges = g.list_edges()
                 print(f"measured at {edges} edge")
 
     def list_all_runs(self):
@@ -122,13 +122,17 @@ class WrappedDatabroker(WrappedCatalogBase):
             print(f"uid: {uid[:9]}...")
             summarize_run(run)
 
-    def export_to_analysis(self, **kwargs):
+    def export_to_analysis(self, skip_unprocessed=True, **kwargs):
         for _, run in self._catalog.items():
+            if skip_unprocessed:
+                if not is_run_processed(run):
+                    print(f"Skipping unprocessed run {run.metadata['start']['scan_id']}")
+                    continue
             print(f"Exporting run {run.metadata['start']['scan_id']}")
             export_run_to_analysis_catalog(run, **kwargs)
 
     def process_tes(self, **kwargs):
-        process_catalog(self._catalog, **kwargs)
+        process_catalog(self, **kwargs)
 
     def check_processed(self):
         for uid, run in self._catalog.items():
