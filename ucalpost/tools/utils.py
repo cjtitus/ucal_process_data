@@ -178,33 +178,23 @@ def merge_func(func, omit_params=[]):
 
         # Get the parameters from the wrapper function and the wrapped function
         params_wrapper = list(sig_wrapper.parameters.values())
-        params_func = list(sig_func.parameters.values())
+        params_func = [
+            param
+            for param in list(sig_func.parameters.values())
+            if param.name not in sig_wrapper.parameters
+        ]
         if params_func and params_func[0].name == "self":
             params_func = params_func[1:]
 
-        # Merge the parameters, placing any '**kwargs' parameters at the end
-        # If there is a duplicate, the parameter from params_wrapper is kept
-        merged_params = (
-            [param for param in params_wrapper if param.kind != param.VAR_KEYWORD]
-            + [
-                param
-                for param in params_func
-                if param.name not in omit_params
-                and param.kind != param.VAR_KEYWORD
-                and param.name not in sig_wrapper.parameters
-            ]
-            + [param for param in params_wrapper if param.kind == param.VAR_KEYWORD]
-            + [
-                param
-                for param in params_func
-                if param.name not in omit_params
-                and param.kind == param.VAR_KEYWORD
-                and param.name not in sig_wrapper.parameters
-            ]
-        )
+        combined_params = [
+            param
+            for param in params_wrapper + params_func
+            if param.name not in omit_params
+        ]
+        combined_params.sort(key=lambda param: param.kind)
 
         # Create a new signature with the merged parameters
-        new_sig = sig_wrapper.replace(parameters=merged_params)
+        new_sig = sig_wrapper.replace(parameters=combined_params)
 
         # Update the signature of the wrapper function
         wrapper.__signature__ = new_sig
