@@ -52,8 +52,19 @@ class WrappedDatabroker(WrappedCatalogBase):
 
     def get_beamtime(self, since, until=None):
         """
-        since : iso formatted date string
-        until : optional, iso formatted date string
+        Get a sub-catalog that has all runs associated with beamtimes that have start dates inside the given start and until times.
+
+        Parameters
+        ----------
+        since : str
+            ISO formatted date string indicating the start time.
+        until : str, optional
+            ISO formatted date string indicating the end time. If not provided, it defaults to one day after the start time.
+
+        Returns
+        -------
+        WrappedDatabroker
+            A sub-catalog containing all runs associated with beamtimes that have start dates within the specified time range.
         """
         if until is None:
             startdate = datetime.datetime.fromisoformat(since)
@@ -146,6 +157,16 @@ class WrappedDatabroker(WrappedCatalogBase):
 
     @merge_func(export_run_to_analysis_catalog)
     def export_to_analysis(self, skip_unprocessed=True, **kwargs):
+        """
+        Export the runs in the catalog to the analysis catalog.
+
+        Parameters
+        ----------
+        skip_unprocessed : bool, optional
+            If True, unprocessed runs will be skipped. Default is True.
+        **kwargs
+            Additional keyword arguments to be passed to the export function.
+        """
         for _, run in self._catalog.items():
             if skip_unprocessed:
                 if not is_run_processed(run):
@@ -158,6 +179,14 @@ class WrappedDatabroker(WrappedCatalogBase):
 
     @merge_func(process_catalog, ["parent_catalog"])
     def process_tes(self, **kwargs):
+        """
+        Process the TES data in the catalog.
+
+        Parameters
+        ----------
+        **kwargs
+            Additional keyword arguments to be passed to the processing function.
+        """
         process_catalog(self, parent_catalog=wdb, **kwargs)
 
     def check_processed(self):

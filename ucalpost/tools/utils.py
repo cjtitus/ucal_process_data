@@ -122,6 +122,10 @@ def merge_docstrings(doc1, doc2, omit_params=[]):
         The merged docstring.
     """
     # Parse the docstrings
+    if doc1 is None:
+        doc1 = ""
+    if doc2 is None:
+        doc2 = ""
     parsed_doc1 = NumpyDocString(doc1)
     parsed_doc2 = NumpyDocString(doc2)
 

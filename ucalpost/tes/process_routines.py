@@ -113,6 +113,25 @@ def process_run(run, loader=None, cal=None, redo=False, overwrite=False, **kwarg
 
 @merge_func(process_run, ["loader", "cal"])
 def process_catalog(catalog, skip_bad_ADR=True, parent_catalog=None, **kwargs):
+    """
+    Process a catalog of runs.
+
+    Parameters
+    ----------
+    catalog : object
+        The catalog to be processed.
+    skip_bad_ADR : bool, optional
+        If True, runs with bad ADR values will be skipped. Default is True.
+    parent_catalog : object, optional
+        The parent catalog of the catalog to be processed. If None, the catalog itself will be used. Default is None.
+    **kwargs
+        Additional keyword arguments to be passed to the processing function.
+
+    Returns
+    -------
+    None
+
+    """
     loader = AnalysisLoader()
     noise_catalogs = catalog.get_subcatalogs(True, False, False, False)
     for ncat in noise_catalogs:
