@@ -131,7 +131,7 @@ def log_from_json(run):
 
 def log_from_run(run):
     try:
-        start_time = run.primary['timestamps']['tes_tfy'].read()
+        start_time = run.primary.data['tes_scan_point_start'].read()
     except KeyError:
         start_time = run.primary['timestamps']['time'].read()
     #acquire_time = run.primary.descriptors[0]['configuration']['tes']['data']['tes_acquire_time']

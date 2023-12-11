@@ -5,7 +5,6 @@ from .raw_classes import RawData, CalibrationInfo
 from .raw_routines import process, save_tes_arrays
 from .process_classes import get_analyzed_filename
 
-
 # Need to do caching of open dataset
 # Just re-do drift_correct when new data comes in?
 # Just re-do calibration when new calibration data comes in?
@@ -64,13 +63,13 @@ def process_run(run, loader=None, cal=None, redo=False, overwrite=False, **kwarg
     save_tes_arrays(rd, overwrite=overwrite)
 
 
-def process_catalog(catalog, skip_bad_ADR=True, **kwargs):
+def process_catalog(catalog, skip_bad_ADR=True, parent_catalog=None, **kwargs):
     loader = AnalysisLoader()
     noise_catalogs = catalog.get_subcatalogs(True, False, False, False)
     for ncat in noise_catalogs:
         scans = ncat.list_meta_key_vals('scan_id')
-        smin = np.min(scans)
-        smax = np.max(scans)
+        smin = min(scans)
+        smax = max(scans)
         print(f"Processing from {smin} to {smax}")
         cal_ids = ncat.list_meta_key_vals('last_cal')
         default_cal = list(cal_ids)[0]
@@ -82,7 +81,10 @@ def process_catalog(catalog, skip_bad_ADR=True, **kwargs):
                     print(f"run {run.start['scan_id']} has no ADR data in baseline, but ADR check was requested, aborting")
                     raise
                 if last_adr_value < 0.1:
-                    print("Last ADR magnet value for run {run.start['scan_id']} was {last_adr_value}, skipping")
+                    print(f"Last ADR magnet value for run {run.start['scan_id']} was {last_adr_value}, skipping")
                     continue
-            cal = ncat[get_cal_id(run, default_cal)]
+            if parent_catalog is not None:
+                cal = parent_catalog[get_cal_id(run, default_cal)]
+            else:
+                cal = catalog[get_cal_id(run, default_cal)]
             process_run(run, loader, cal, **kwargs)

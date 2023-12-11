@@ -132,7 +132,7 @@ class WrappedDatabroker(WrappedCatalogBase):
             export_run_to_analysis_catalog(run, **kwargs)
 
     def process_tes(self, **kwargs):
-        process_catalog(self, **kwargs)
+        process_catalog(self, parent_catalog=wdb, **kwargs)
 
     def check_processed(self):
         for uid, run in self._catalog.items():

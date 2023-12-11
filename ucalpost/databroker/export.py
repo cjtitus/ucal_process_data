@@ -11,7 +11,7 @@ import numpy as np
 from functools import reduce
 from httpx import HTTPStatusError
 from time import sleep
-
+import re
 """
 Module to export processed data to analysis catalog
 """
@@ -58,17 +58,17 @@ def get_run_header(run):
         scaninfo['ref_id'] = run.start['ref_args']['i0up_multimesh_sample_sample_id']['value']
     scaninfo['raw_uid'] = run.start['uid']
     motors = {}
-    baseline = run.baseline.data
-    motors['exslit'] = get_with_fallbacks(baseline, 'Exit Slit of Mono Vertical Gap')[0]
-    motors['manipx'] = get_with_fallbacks(baseline, 'manip_x', 'Manipulator_x')[0]
-    motors['manipy'] = get_with_fallbacks(baseline, 'manip_y', 'Manipulator_y')[0]
-    motors['manipz'] = get_with_fallbacks(baseline, 'manip_z', 'Manipulator_z')[0]
-    motors['manipr'] = get_with_fallbacks(baseline, 'manip_r', 'Manipulator_r')[0]
-    motors['samplex'] = get_with_fallbacks(baseline, 'manip_sx', 'Manipulator_sx')[0]
-    motors['sampley'] = get_with_fallbacks(baseline, 'manip_sy', 'Manipulator_sy')[0]
-    motors['samplez'] = get_with_fallbacks(baseline, 'manip_sz', 'Manipulator_sz')[0]
-    motors['sampler'] = get_with_fallbacks(baseline, 'manip_sr', 'Manipulator_sr')[0]
-    motors['tesz'] = get_with_fallbacks(baseline, 'tesz')[0]
+    baseline = run.baseline.data.read()
+    motors['exslit'] = get_with_fallbacks(baseline, 'Exit Slit of Mono Vertical Gap')[0].item()
+    motors['manipx'] = get_with_fallbacks(baseline, 'manip_x', 'Manipulator_x')[0].item()
+    motors['manipy'] = get_with_fallbacks(baseline, 'manip_y', 'Manipulator_y')[0].item()
+    motors['manipz'] = get_with_fallbacks(baseline, 'manip_z', 'Manipulator_z')[0].item()
+    motors['manipr'] = get_with_fallbacks(baseline, 'manip_r', 'Manipulator_r')[0].item()
+    motors['samplex'] = get_with_fallbacks(baseline, 'manip_sx', 'Manipulator_sx')[0].item()
+    motors['sampley'] = get_with_fallbacks(baseline, 'manip_sy', 'Manipulator_sy')[0].item()
+    motors['samplez'] = get_with_fallbacks(baseline, 'manip_sz', 'Manipulator_sz')[0].item()
+    motors['sampler'] = get_with_fallbacks(baseline, 'manip_sr', 'Manipulator_sr')[0].item()
+    motors['tesz'] = get_with_fallbacks(baseline, 'tesz')[0].item()
     metadata['scaninfo'] = scaninfo
     metadata['motors'] = motors
     metadata['channelinfo'] = {}
@@ -88,11 +88,23 @@ def get_run_data(run, exportArrayData=False):
     exposure = float(exposure)
     columns = []
     datadict = {}
-    for key in run.primary.data:
+    known_array_keys = ['tes_mca_spectrum']
+    statistics_re = re.compile('_median$|_std$|_npts$|_sum$')
+    keys = run.primary.data.keys()
+    usekeys = []
+
+    for key in keys:
+        if not exportArrayData:
+            if key in known_array_keys:
+                continue
+        if statistics_re.search(key) is not None:
+            continue
+        usekeys.append(key)
+    data = run.primary.data.read(usekeys)
+    for key in data:
         newkey = convert_names(key)
-        data = run.primary.data[key][:]
-        if len(data.shape) == 1 or exportArrayData:
-            datadict[newkey] = data
+        if len(data[key].shape) == 1 or exportArrayData:
+            datadict[newkey] = data[key].data
     if 'Seconds' not in datadict:
         datadict['Seconds'] = np.zeros_like(datadict[newkey]) + exposure
     for k in natural_order:

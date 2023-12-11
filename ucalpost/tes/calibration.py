@@ -10,7 +10,7 @@ import h5py
 cal_line_master = {'ck': 278.21, 'nk': 392.25, 'tila': 452, 'ok': 524.45, 'fell': 614.84,
                    'coll': 675.98, 'fk': 677, 'fela': 705.01, 'felb': 717.45,
                    'cola': 775.31, 'colb': 790.21, 'nill': 742.3, 'nila': 848.85,
-                   'nilb': 866.11, 'cula': 926.98, 'culb': 947.52,
+                   'nilb': 866.11, 'cema': 883, 'cula': 926.98, 'culb': 947.52,
                    'znla': 1009.39, 'znlb': 1032.46}
 
 
