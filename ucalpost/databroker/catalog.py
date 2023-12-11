@@ -4,28 +4,40 @@ from ..tes.process_classes import is_run_processed
 from .export import export_run_to_analysis_catalog
 from databroker.queries import PartialUID, TimeRange, Key
 from ..tools.catalog import WrappedCatalogBase
+from ..tools.utils import adjust_signature
+from functools import wraps
 import datetime
 
 
 class WrappedDatabroker(WrappedCatalogBase):
-    KEY_MAP = {"samples": "sample_args.sample_name.value", "groups": "group_md.name",
-               "edges": "edge", "noise": "last_noise", "scantype": "scantype",
-               "proposal": "proposal", "uid": "uid", "beamtime_start": "beamtime_start"}
+    KEY_MAP = {
+        "samples": "sample_args.sample_name.value",
+        "groups": "group_md.name",
+        "edges": "edge",
+        "noise": "last_noise",
+        "scantype": "scantype",
+        "proposal": "proposal",
+        "uid": "uid",
+        "beamtime_start": "beamtime_start",
+    }
 
     def __init__(self, catalog, prefilter=False):
         super().__init__(catalog)
         if prefilter:
             self._catalog = self._filter_by_stop()
 
-    def get_subcatalogs(self, noise=True, groups=True, samples=True, edges=True, **kwargs):
-        return self._get_subcatalogs(noise=noise, groups=groups,
-                                     samples=samples, edges=edges, **kwargs)
+    def get_subcatalogs(
+        self, noise=True, groups=True, samples=True, edges=True, **kwargs
+    ):
+        return self._get_subcatalogs(
+            noise=noise, groups=groups, samples=samples, edges=edges, **kwargs
+        )
 
     def _filter_by_stop(self):
         ok_uuids = []
         for uid, run in self._catalog.items():
             try:
-                if run.metadata['stop']['exit_status'] == "success":
+                if run.metadata["stop"]["exit_status"] == "success":
                     ok_uuids.append(uid)
             except:
                 pass
@@ -48,14 +60,18 @@ class WrappedDatabroker(WrappedCatalogBase):
             defaultdelta = datetime.timedelta(days=1)
             untildatetime = startdate + defaultdelta
             until = untildatetime.isoformat()
-        beamtime_start_vals = self.search(Key("beamtime_start") > since).search(Key("beamtime_start") < until).list_meta_key_vals("beamtime_start")
+        beamtime_start_vals = (
+            self.search(Key("beamtime_start") > since)
+            .search(Key("beamtime_start") < until)
+            .list_meta_key_vals("beamtime_start")
+        )
         return self.filter_by_key("beamtime_start", beamtime_start_vals)
 
     def list_meta_key_vals(self, key):
-        keys = key.split('.')
+        keys = key.split(".")
         vals = set()
         for h in self._catalog.values():
-            s = h.metadata['start']
+            s = h.metadata["start"]
             for k in keys:
                 s = s.get(k, None)
                 if s is None:
@@ -67,11 +83,17 @@ class WrappedDatabroker(WrappedCatalogBase):
     def filter(self, stop=False, samples=None, groups=None, scantype=None, edges=None):
         if stop:
             catalog = self.filter_by_stop()
-            return catalog.filter(stop=False, samples=samples, groups=groups,
-                                  scantype=scantype, edges=edges)
+            return catalog.filter(
+                stop=False,
+                samples=samples,
+                groups=groups,
+                scantype=scantype,
+                edges=edges,
+            )
         else:
-            return super().filter(samples=samples, groups=groups,
-                                  scantype=scantype, edges=edges)
+            return super().filter(
+                samples=samples, groups=groups, scantype=scantype, edges=edges
+            )
 
     def get_noise_catalogs(self):
         return self._get_subcatalogs(noise=True)
@@ -113,7 +135,7 @@ class WrappedDatabroker(WrappedCatalogBase):
     def list_all_runs(self):
         groupname = ""
         for uid, run in self._catalog.items():
-            group = run.metadata['start'].get('group', '')
+            group = run.metadata["start"].get("group", "")
             if group != groupname:
                 groupname = group
                 if groupname != "":
@@ -122,15 +144,21 @@ class WrappedDatabroker(WrappedCatalogBase):
             print(f"uid: {uid[:9]}...")
             summarize_run(run)
 
+    @wraps(export_run_to_analysis_catalog)
+    @adjust_signature("run")
     def export_to_analysis(self, skip_unprocessed=True, **kwargs):
         for _, run in self._catalog.items():
             if skip_unprocessed:
                 if not is_run_processed(run):
-                    print(f"Skipping unprocessed run {run.metadata['start']['scan_id']}")
+                    print(
+                        f"Skipping unprocessed run {run.metadata['start']['scan_id']}"
+                    )
                     continue
             print(f"Exporting run {run.metadata['start']['scan_id']}")
             export_run_to_analysis_catalog(run, **kwargs)
 
+    @wraps(process_catalog)
+    @adjust_signature("parent_catalog")
     def process_tes(self, **kwargs):
         process_catalog(self, parent_catalog=wdb, **kwargs)
 
