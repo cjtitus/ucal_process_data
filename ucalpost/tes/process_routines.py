@@ -4,6 +4,8 @@ from ..databroker.run import (get_filename, get_cal, get_tes_state,
 from .raw_classes import RawData, CalibrationInfo
 from .raw_routines import process, save_tes_arrays
 from .process_classes import get_analyzed_filename
+from ..tools.utils import merge_signatures, adjust_signature
+from functools import wraps
 
 # Need to do caching of open dataset
 # Just re-do drift_correct when new data comes in?
@@ -54,6 +56,34 @@ class AnalysisLoader:
 
 
 def process_run(run, loader=None, cal=None, redo=False, overwrite=False, **kwargs):
+    """
+    Process a single run of data.
+
+    Parameters
+    ----------
+    run : object
+        The run to be processed.
+    loader : AnalysisLoader, optional
+        An instance of the AnalysisLoader class to be used for loading the data. 
+        If None, a new AnalysisLoader instance will be created. Default is None.
+    cal : object, optional
+        The calibration data to be used for the run. If None, the calibration data 
+        will be obtained from the run itself if it's a calibration run, or from 
+        the associated calibration run otherwise. Default is None.
+    redo : bool, optional
+        If True, the run will be processed even if it has already been processed before. 
+        Default is False.
+    overwrite : bool, optional
+        If True, the processed data will be saved even if a file with the same name 
+        already exists. Default is False.
+    **kwargs
+        Additional keyword arguments to be passed to the processing function.
+
+    Returns
+    -------
+    None
+
+    """
     if loader is None:
         loader = AnalysisLoader()
     rd, calinfo = loader.getAnalysisObjects(run, cal)
@@ -63,6 +93,8 @@ def process_run(run, loader=None, cal=None, redo=False, overwrite=False, **kwarg
     save_tes_arrays(rd, overwrite=overwrite)
 
 
+@adjust_signature("loader", "cal")
+@merge_signatures(process_run)
 def process_catalog(catalog, skip_bad_ADR=True, parent_catalog=None, **kwargs):
     loader = AnalysisLoader()
     noise_catalogs = catalog.get_subcatalogs(True, False, False, False)

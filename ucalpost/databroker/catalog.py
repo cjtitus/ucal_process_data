@@ -4,7 +4,7 @@ from ..tes.process_classes import is_run_processed
 from .export import export_run_to_analysis_catalog
 from databroker.queries import PartialUID, TimeRange, Key
 from ..tools.catalog import WrappedCatalogBase
-from ..tools.utils import adjust_signature
+from ..tools.utils import adjust_signature, merge_signatures
 from functools import wraps
 import datetime
 
@@ -144,8 +144,7 @@ class WrappedDatabroker(WrappedCatalogBase):
             print(f"uid: {uid[:9]}...")
             summarize_run(run)
 
-    @wraps(export_run_to_analysis_catalog)
-    @adjust_signature("run")
+    @merge_signatures(export_run_to_analysis_catalog) 
     def export_to_analysis(self, skip_unprocessed=True, **kwargs):
         for _, run in self._catalog.items():
             if skip_unprocessed:
@@ -157,8 +156,8 @@ class WrappedDatabroker(WrappedCatalogBase):
             print(f"Exporting run {run.metadata['start']['scan_id']}")
             export_run_to_analysis_catalog(run, **kwargs)
 
-    @wraps(process_catalog)
     @adjust_signature("parent_catalog")
+    @merge_signatures(process_catalog)
     def process_tes(self, **kwargs):
         process_catalog(self, parent_catalog=wdb, **kwargs)
 

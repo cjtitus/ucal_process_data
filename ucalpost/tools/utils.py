@@ -1,5 +1,6 @@
 import collections
 import inspect
+from functools import update_wrapper
 
 
 def iterfy(x):
@@ -52,4 +53,32 @@ def adjust_signature(*omit_args):
         func.__signature__ = new_sig
         return func
 
+    return decorator
+
+
+def merge_signatures(func):
+    def decorator(wrapper):
+        # Get the signatures of the two functions
+        sig_func = inspect.signature(func)
+        sig_wrapper = inspect.signature(wrapper)
+
+        # Separate positional and keyword parameters from variadic keyword parameters
+        func_params = list(sig_func.parameters.values())[1:]
+        wrapper_params = [param for param in sig_wrapper.parameters.values() if param.kind != param.VAR_KEYWORD]
+        wrapper_var_keyword_params = [param for param in sig_wrapper.parameters.values() if param.kind == param.VAR_KEYWORD]
+
+        # Create a new parameters list that includes parameters from both functions
+        
+        new_params = wrapper_params + [param for param in func_params if param.name not in sig_wrapper.parameters] + wrapper_var_keyword_params
+
+        # Create a new signature with the combined parameters
+        new_sig = sig_wrapper.replace(parameters=new_params)
+
+        # Update the signature of the wrapper function
+        wrapper.__signature__ = new_sig
+
+        # Update the docstring and other attributes of the wrapper function
+        update_wrapper(wrapper, func)
+
+        return wrapper
     return decorator
