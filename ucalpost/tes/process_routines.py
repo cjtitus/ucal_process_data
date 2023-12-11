@@ -1,17 +1,23 @@
 import numpy as np
-from ..databroker.run import (get_filename, get_cal, get_tes_state,
-                              get_line_names, get_save_directory, get_cal_id)
+from ..databroker.run import (
+    get_filename,
+    get_cal,
+    get_tes_state,
+    get_line_names,
+    get_save_directory,
+    get_cal_id,
+)
 from .raw_classes import RawData, CalibrationInfo
 from .raw_routines import process, save_tes_arrays
 from .process_classes import get_analyzed_filename
-from ..tools.utils import merge_signatures, adjust_signature
-from functools import wraps
+from ..tools.utils import merge_func
 
 # Need to do caching of open dataset
 # Just re-do drift_correct when new data comes in?
 # Just re-do calibration when new calibration data comes in?
 # Need to save data
 # Only works when cal and data are in same file
+
 
 class AnalysisLoader:
     def __init__(self):
@@ -32,7 +38,7 @@ class AnalysisLoader:
         else:
             self.rd.update(state, savefile)
         if cal is None:
-            if run.start.get('scantype', None) == 'calibration':
+            if run.start.get("scantype", None) == "calibration":
                 cal = run
             else:
                 cal = get_cal(run)
@@ -43,12 +49,24 @@ class AnalysisLoader:
         cal_savefile = get_analyzed_filename(cal)
 
         if self.ci is None:
-            self.ci = CalibrationInfo(cal_filename, cal_state, cal_savefile,
-                                      cal_savedir, line_names, data=self.rd.data)
+            self.ci = CalibrationInfo(
+                cal_filename,
+                cal_state,
+                cal_savefile,
+                cal_savedir,
+                line_names,
+                data=self.rd.data,
+            )
             self.cal_filename = cal_filename
         elif cal_filename != self.cal_filename:
-            self.ci = CalibrationInfo(cal_filename, cal_state, cal_savefile,
-                                      cal_savedir, line_names, data=self.rd.data)
+            self.ci = CalibrationInfo(
+                cal_filename,
+                cal_state,
+                cal_savefile,
+                cal_savedir,
+                line_names,
+                data=self.rd.data,
+            )
             self.cal_filename = cal_filename
         else:
             self.ci.update(cal_state, cal_savefile, cal_savedir, line_names)
@@ -64,17 +82,17 @@ def process_run(run, loader=None, cal=None, redo=False, overwrite=False, **kwarg
     run : object
         The run to be processed.
     loader : AnalysisLoader, optional
-        An instance of the AnalysisLoader class to be used for loading the data. 
+        An instance of the AnalysisLoader class to be used for loading the data.
         If None, a new AnalysisLoader instance will be created. Default is None.
     cal : object, optional
-        The calibration data to be used for the run. If None, the calibration data 
-        will be obtained from the run itself if it's a calibration run, or from 
+        The calibration data to be used for the run. If None, the calibration data
+        will be obtained from the run itself if it's a calibration run, or from
         the associated calibration run otherwise. Default is None.
     redo : bool, optional
-        If True, the run will be processed even if it has already been processed before. 
+        If True, the run will be processed even if it has already been processed before.
         Default is False.
     overwrite : bool, optional
-        If True, the processed data will be saved even if a file with the same name 
+        If True, the processed data will be saved even if a file with the same name
         already exists. Default is False.
     **kwargs
         Additional keyword arguments to be passed to the processing function.
@@ -93,27 +111,30 @@ def process_run(run, loader=None, cal=None, redo=False, overwrite=False, **kwarg
     save_tes_arrays(rd, overwrite=overwrite)
 
 
-@adjust_signature("loader", "cal")
-@merge_signatures(process_run)
+@merge_func(process_run, ["loader", "cal"])
 def process_catalog(catalog, skip_bad_ADR=True, parent_catalog=None, **kwargs):
     loader = AnalysisLoader()
     noise_catalogs = catalog.get_subcatalogs(True, False, False, False)
     for ncat in noise_catalogs:
-        scans = ncat.list_meta_key_vals('scan_id')
+        scans = ncat.list_meta_key_vals("scan_id")
         smin = min(scans)
         smax = max(scans)
         print(f"Processing from {smin} to {smax}")
-        cal_ids = ncat.list_meta_key_vals('last_cal')
+        cal_ids = ncat.list_meta_key_vals("last_cal")
         default_cal = list(cal_ids)[0]
         for run in ncat.values():
             if skip_bad_ADR:
                 try:
-                    last_adr_value = run.baseline['data']['adr_heater'][1]
+                    last_adr_value = run.baseline["data"]["adr_heater"][1]
                 except KeyError:
-                    print(f"run {run.start['scan_id']} has no ADR data in baseline, but ADR check was requested, aborting")
+                    print(
+                        f"run {run.start['scan_id']} has no ADR data in baseline, but ADR check was requested, aborting"
+                    )
                     raise
                 if last_adr_value < 0.1:
-                    print(f"Last ADR magnet value for run {run.start['scan_id']} was {last_adr_value}, skipping")
+                    print(
+                        f"Last ADR magnet value for run {run.start['scan_id']} was {last_adr_value}, skipping"
+                    )
                     continue
             if parent_catalog is not None:
                 cal = parent_catalog[get_cal_id(run, default_cal)]
