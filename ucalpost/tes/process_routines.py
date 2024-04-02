@@ -20,7 +20,8 @@ from ..tools.utils import merge_func
 
 
 class AnalysisLoader:
-    def __init__(self):
+    def __init__(self, catalog):
+        self.catalog = catalog
         self.off_filename = None
         self.rd = None
         self.ci = None
@@ -41,7 +42,7 @@ class AnalysisLoader:
             if run.start.get("scantype", None) == "calibration":
                 cal = run
             else:
-                cal = get_cal(run)
+                cal = get_cal(run, self.catalog)
         cal_savedir = get_save_directory(cal)
         cal_state = get_tes_state(cal)
         line_names = get_line_names(cal)
@@ -73,7 +74,7 @@ class AnalysisLoader:
         return self.rd, self.ci
 
 
-def process_run(run, loader=None, cal=None, redo=False, overwrite=False, **kwargs):
+def process_run(run, catalog, loader=None, cal=None, redo=False, overwrite=False, **kwargs):
     """
     Process a single run of data.
 
@@ -103,7 +104,7 @@ def process_run(run, loader=None, cal=None, redo=False, overwrite=False, **kwarg
 
     """
     if loader is None:
-        loader = AnalysisLoader()
+        loader = AnalysisLoader(catalog)
     rd, calinfo = loader.getAnalysisObjects(run, cal)
     print(f"Processing {rd.off_filename}, state: {rd.state}")
     process(rd, calinfo, redo=redo, overwrite=overwrite, **kwargs)
@@ -157,6 +158,7 @@ def process_catalog(catalog, skip_bad_ADR=True, parent_catalog=None, **kwargs):
                     continue
             if parent_catalog is not None:
                 cal = parent_catalog[get_cal_id(run, default_cal)]
+                process_run(run, parent_catalog, loader, cal, **kwargs)
             else:
                 cal = catalog[get_cal_id(run, default_cal)]
-            process_run(run, loader, cal, **kwargs)
+                process_run(run, catalog, loader, cal, **kwargs)
