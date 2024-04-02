@@ -133,7 +133,7 @@ def process_catalog(catalog, skip_bad_ADR=True, parent_catalog=None, **kwargs):
     None
 
     """
-    loader = AnalysisLoader()
+    loader = AnalysisLoader(catalog)
     noise_catalogs = catalog.get_subcatalogs(True, False, False, False)
     for ncat in noise_catalogs:
         scans = ncat.list_meta_key_vals("scan_id")
