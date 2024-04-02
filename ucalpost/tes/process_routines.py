@@ -112,7 +112,7 @@ def process_run(run, catalog, loader=None, cal=None, redo=False, overwrite=False
     save_tes_arrays(rd, overwrite=overwrite)
 
 
-@merge_func(process_run, ["loader", "cal"])
+@merge_func(process_run, ["run", "loader", "cal"])
 def process_catalog(catalog, skip_bad_ADR=True, parent_catalog=None, **kwargs):
     """
     Process a catalog of runs.
