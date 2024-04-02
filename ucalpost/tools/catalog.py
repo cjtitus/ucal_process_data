@@ -26,8 +26,10 @@ class WrappedCatalogBase(ABC):
 
         fname = cls._filter_function_name(search_key)
         if not hasattr(cls, fname):
+
             def _inner(self, values):
                 return self.filter_by_key(catalog_key, values)
+
             _inner.__name__ = fname
             setattr(cls, fname, _inner)
 
@@ -35,14 +37,16 @@ class WrappedCatalogBase(ABC):
     def _make_list_function(cls, list_key, catalog_key):
         fname = cls._list_function_name(list_key)
         if not hasattr(cls, fname):
+
             def _inner(self):
                 return self.list_meta_key_vals(catalog_key)
 
             _inner.__name__ = fname
             setattr(cls, fname, _inner)
 
-    def __init__(self, catalog):
+    def __init__(self, catalog, parent=None):
         self._catalog = catalog
+        self._parent = parent
 
         for function_key, catalog_key in self.KEY_MAP.items():
             self.__class__._make_filter_function(function_key, catalog_key)
@@ -50,7 +54,7 @@ class WrappedCatalogBase(ABC):
 
     def __getitem__(self, key):
         return self._catalog[key]
-    
+
     def values(self):
         return self._catalog.values()
 
@@ -58,7 +62,7 @@ class WrappedCatalogBase(ABC):
         return self._catalog.items()
 
     def search(self, expr):
-        return self.__class__(self._catalog.search(expr))
+        return self.__class__(self._catalog.search(expr), self._parent)
 
     def filter_by_key(self, key, values):
         return self.search(In(key, list(iterfy(values))))

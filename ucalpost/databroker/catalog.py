@@ -26,8 +26,8 @@ class WrappedDatabroker(WrappedCatalogBase):
         "beamtime_start": "beamtime_start",
     }
 
-    def __init__(self, catalog, prefilter=False):
-        super().__init__(catalog)
+    def __init__(self, catalog, parent=None, prefilter=False):
+        super().__init__(catalog, parent)
         if prefilter:
             self._catalog = self._filter_by_stop()
 
@@ -49,14 +49,52 @@ class WrappedDatabroker(WrappedCatalogBase):
         return self._catalog.search(PartialUID(*ok_uuids))
 
     def filter_by_time(self, since=None, until=None):
+        """
+        Return a new catalog filtered to include only scans between the specified times.
+
+        Parameters
+        ----------
+        since : str, optional
+            The start time for the filter, formatted as "YYYY-MM-DD". If not provided, no lower time bound is applied.
+        until : str, optional
+            The end time for the filter, formatted as "YYYY-MM-DD". If not provided, no upper time bound is applied.
+
+        Returns
+        -------
+        WrappedDatabroker
+            A new instance of the catalog filtered by the specified time range.
+        """
         return self.search(TimeRange(since=since, until=until))
 
     def filter_by_stop(self):
+        """
+        Filters the catalog to only include scans where the exit status was 'success'.
+
+        Returns
+        -------
+        WrappedDatabroker
+            A new instance of the catalog, filtered to only include successful scans.
+        """
         catalog = self._filter_by_stop()
-        return self.__class__(catalog)
+        return self.__class__(catalog, self._parent)
 
     def filter_by_scanid(self, start, end):
-        return self.search(Key("scan_id") >= start).search(Key("scan_id" <= end))
+        """
+        Filters the catalog to only include scans within a specified range of scan IDs.
+
+        Parameters
+        ----------
+        start : int
+            The starting scan ID of the range.
+        end : int
+            The ending scan ID of the range.
+
+        Returns
+        -------
+        WrappedDatabroker
+            A new instance of the catalog filtered by the specified scan ID range.
+        """
+        return self.search(Key("scan_id") >= start).search(Key("scan_id") <= end)
 
     def get_beamtime(self, since, until=None):
         """
@@ -118,6 +156,12 @@ class WrappedDatabroker(WrappedCatalogBase):
         return self._get_subcatalogs(noise=True)
 
     def describe(self):
+        """
+        Prints a summary of the catalog, including the number of runs, time range, groups, samples, and scan ID range.
+
+        This method provides a high-level overview of the catalog's contents, highlighting the time range of the data,
+        the groups and samples included, and the range of scan IDs.
+        """
         nruns = len(self._catalog)
         samples = self.list_samples()
         groups = self.list_groups()
@@ -125,13 +169,20 @@ class WrappedDatabroker(WrappedCatalogBase):
         scans = self.list_meta_key_vals("scan_id")
         start = datetime.datetime.fromtimestamp(min(times)).isoformat()
         stop = datetime.datetime.fromtimestamp(max(times)).isoformat()
+        scan_start = min(scans)
+        scan_stop = max(scans)
         print(f"Catalog contains {nruns} runs")
         print(f"Time range: {start} to {stop}")
+        print(f"Scan ID range: {scan_start} to {scan_stop}")
         print(f"Contains groups {groups}")
         print(f"Contains samples {samples}")
 
     def summarize(self):
         noise_catalogs = self.get_subcatalogs(True, False, False, False)
+        try:
+            noise_catalogs.sort(key=lambda c: c[0].start["time"])
+        except:
+            pass
         for c in noise_catalogs:
             print("Noise Catalog...")
             ntimes = c.list_meta_key_vals("time")
@@ -176,8 +227,6 @@ class WrappedDatabroker(WrappedCatalogBase):
         ----------
         skip_unprocessed : bool, optional
             If True, unprocessed runs will be skipped. Default is True.
-        **kwargs
-            Additional keyword arguments to be passed to the export function.
         """
         for _, run in self._catalog.items():
             if skip_unprocessed:
@@ -199,7 +248,7 @@ class WrappedDatabroker(WrappedCatalogBase):
         **kwargs
             Additional keyword arguments to be passed to the processing function.
         """
-        process_catalog(self, parent_catalog=wdb, **kwargs)
+        process_catalog(self, parent_catalog=self._parent, **kwargs)
 
     def check_processed(self):
         for uid, run in self._catalog.items():
