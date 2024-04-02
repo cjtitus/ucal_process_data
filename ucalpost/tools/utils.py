@@ -103,7 +103,7 @@ def merge_signatures(func):
     return decorator
 
 
-def merge_docstrings(doc1, doc2, omit_params=[]):
+def merge_docstrings(doc1, doc2, omit_params=[], param_order=None):
     """
     Merge two numpy-style docstrings.
 
@@ -138,7 +138,19 @@ def merge_docstrings(doc1, doc2, omit_params=[]):
     ]
 
     # Sort the parameters so that any parameter with a "**" in its name is placed at the end
-    merged_params.sort(key=lambda param: "**" in param.name)
+    if param_order:
+        merged_params.sort(
+            key=lambda param: (
+                (
+                    param_order.index(param.name)
+                    if param.name in param_order
+                    else len(param_order)
+                ),
+                param.name,
+            )
+        )
+    else:
+        merged_params.sort(key=lambda param: "**" in param.name)
 
     # Create a copy of the first parsed docstring
     merged_doc = copy.deepcopy(parsed_doc1)
@@ -150,7 +162,14 @@ def merge_docstrings(doc1, doc2, omit_params=[]):
     return str(merged_doc)
 
 
-def merge_func(func, omit_params=[]):
+def sort_params(params):
+    params.sort(key=lambda param: param.default != inspect._empty)
+    params.sort(key=lambda param: param.kind)
+
+
+def merge_func(
+    func, omit_params=[], exclude_wrapper_args=True, exclude_wrapper_kwargs=True
+):
     """
     A decorator that merges the docstrings and function signatures of the wrapped function and the wrapper function.
 
@@ -169,8 +188,6 @@ def merge_func(func, omit_params=[]):
 
     def decorator(wrapper):
         # Merge the docstrings
-        merged_docstring = merge_docstrings(wrapper.__doc__, func.__doc__, omit_params)
-        wrapper.__doc__ = merged_docstring
 
         # Merge the function signatures
         sig_wrapper = inspect.signature(wrapper)
@@ -178,21 +195,33 @@ def merge_func(func, omit_params=[]):
 
         # Get the parameters from the wrapper function and the wrapped function
         params_wrapper = list(sig_wrapper.parameters.values())
+        if exclude_wrapper_args:
+            params_wrapper = [
+                param for param in params_wrapper if param.kind != param.VAR_POSITIONAL
+            ]
+        if exclude_wrapper_kwargs:
+            params_wrapper = [
+                param for param in params_wrapper if param.kind != param.VAR_KEYWORD
+            ]
         params_func = [
             param
             for param in list(sig_func.parameters.values())
-            if param.name not in sig_wrapper.parameters
+            if param.name not in [wparam.name for wparam in params_wrapper]
         ]
         if params_func and params_func[0].name == "self":
             params_func = params_func[1:]
 
         combined_params = [
             param
-            for param in params_wrapper + params_func
+            for param in params_func + params_wrapper
             if param.name not in omit_params
         ]
-        combined_params.sort(key=lambda param: param.kind)
-
+        sort_params(combined_params)
+        param_order = [param.name for param in combined_params]
+        merged_docstring = merge_docstrings(
+            wrapper.__doc__, func.__doc__, omit_params, param_order
+        )
+        wrapper.__doc__ = merged_docstring
         # Create a new signature with the merged parameters
         new_sig = sig_wrapper.replace(parameters=combined_params)
 

@@ -1,12 +1,17 @@
-from .run import summarize_run, db
+from .run import summarize_run
 from ..tes.process_routines import process_catalog
 from ..tes.process_classes import is_run_processed
 from .export import export_run_to_analysis_catalog
 from databroker.queries import PartialUID, TimeRange, Key
 from ..tools.catalog import WrappedCatalogBase
 from ..tools.utils import merge_func
-from functools import wraps
 import datetime
+from tiled.client import from_profile
+
+
+def getWDB(profile):
+    db = from_profile(profile)
+    return WrappedDatabroker(db)
 
 
 class WrappedDatabroker(WrappedCatalogBase):
@@ -49,6 +54,9 @@ class WrappedDatabroker(WrappedCatalogBase):
     def filter_by_stop(self):
         catalog = self._filter_by_stop()
         return self.__class__(catalog)
+
+    def filter_by_scanid(self, start, end):
+        return self.search(Key("scan_id") >= start).search(Key("scan_id" <= end))
 
     def get_beamtime(self, since, until=None):
         """
@@ -129,7 +137,11 @@ class WrappedDatabroker(WrappedCatalogBase):
             ntimes = c.list_meta_key_vals("time")
             nstart = datetime.datetime.fromtimestamp(min(ntimes)).isoformat()
             nstop = datetime.datetime.fromtimestamp(max(ntimes)).isoformat()
-            print(f"From {nstart} to {nstop}")
+            scans = c.list_meta_key_vals("scan_id")
+            sstart = min(scans)
+            sstop = max(scans)
+
+            print(f"Scans {sstart} to {sstop} taken From {nstart} to {nstop}")
             group_catalogs = c.get_subcatalogs(False, True, False, False)
             for g in group_catalogs:
                 group = list(g.list_groups())[0]
@@ -195,4 +207,4 @@ class WrappedDatabroker(WrappedCatalogBase):
             print(f"TES processed: {is_run_processed(run)}")
 
 
-wdb = WrappedDatabroker(db)
+# wdb = WrappedDatabroker(db)

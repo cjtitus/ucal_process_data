@@ -1,11 +1,11 @@
-from tiled.client import from_profile
+#from tiled.client import from_profile
 from os import path
 from databroker.queries import TimeRange
 import datetime
 import numpy as np
 
 
-db = from_profile("ucal")
+#db = from_profile("ucal")
 
 
 def get_config_dict(run):
@@ -86,13 +86,13 @@ def get_cal_id(run, default=None):
     return cal_id
 
 
-def get_cal(run):
-    return db[run.start['last_cal']]
+def get_cal(run, catalog):
+    return catalog[run.start['last_cal']]
 
 
-def getRunFromStop(doc):
+def getRunFromStop(doc, catalog):
     run_uuid = doc['run_start']
-    run = db[run_uuid]
+    run = catalog[run_uuid]
     return run
 
 
