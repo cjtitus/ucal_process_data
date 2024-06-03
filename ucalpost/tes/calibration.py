@@ -5,13 +5,30 @@ from os import path
 from itertools import combinations
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 import h5py
 
-cal_line_master = {'ck': 278.21, 'nk': 392.25, 'tila': 452, 'ok': 524.45, 'fell': 614.84,
-                   'coll': 675.98, 'fk': 677, 'fela': 705.01, 'felb': 717.45,
-                   'cola': 775.31, 'colb': 790.21, 'nill': 742.3, 'nila': 848.85,
-                   'nilb': 866.11, 'cema': 883, 'cula': 926.98, 'culb': 947.52,
-                   'znla': 1009.39, 'znlb': 1032.46}
+cal_line_master = {
+    "ck": 278.21,
+    "nk": 392.25,
+    "tila": 452,
+    "ok": 524.45,
+    "fell": 614.84,
+    "coll": 675.98,
+    "fk": 677,
+    "fela": 705.01,
+    "felb": 717.45,
+    "cola": 775.31,
+    "colb": 790.21,
+    "nill": 742.3,
+    "nila": 848.85,
+    "nilb": 866.11,
+    "cema": 883,
+    "cula": 926.98,
+    "culb": 947.52,
+    "znla": 1009.39,
+    "znlb": 1032.46,
+}
 
 
 mass.line_models.VALIDATE_BIN_SIZE = False
@@ -26,9 +43,18 @@ def get_line_energies(line_names):
     return line_energies
 
 
-def assignPeaks(peak_positions, line_names, nextra=2, nincrement=2,
-                nextramax=4, rms_cutoff=0.2, polyorder=2,
-                autoinclude=1, curvename="gain", debug=False):
+def assignPeaks(
+    peak_positions,
+    line_names,
+    nextra=2,
+    nincrement=2,
+    nextramax=4,
+    rms_cutoff=0.2,
+    polyorder=2,
+    autoinclude=1,
+    curvename="gain",
+    debug=False,
+):
     """Tries to find an assignment of peaks to line names that is reasonably self consistent and smooth
 
     Args:
@@ -54,13 +80,16 @@ def assignPeaks(peak_positions, line_names, nextra=2, nincrement=2,
         sel_positions = np.asarray(peak_positions[:n_sel], dtype="float")
 
         assign = getPeakCombinations(sel_positions, len(energies), autoinclude)
-        bestPeaks, bestRMS, allRMS = getAccuracyEstimates(energies, assign,
-                                                          curvename, polyorder)
+        bestPeaks, bestRMS, allRMS = getAccuracyEstimates(
+            energies, assign, curvename, polyorder
+        )
 
         if bestRMS > rms_cutoff:
             n_sel += nincrement
             if n_sel > nmax:
-                print(f"no peak assignment succeeded: Best RMS: {bestRMS}, RMS Cutoff: {rms_cutoff}")
+                print(
+                    f"no peak assignment succeeded: Best RMS: {bestRMS}, RMS Cutoff: {rms_cutoff}"
+                )
                 if debug:
                     return name_e, energies, assign, allRMS
                 else:
@@ -74,8 +103,7 @@ def assignPeaks(peak_positions, line_names, nextra=2, nincrement=2,
                 return name_e, energies, bestPeaks, bestRMS
 
 
-def getAccuracyEstimates(energies, assignments, curvename="gain",
-                         maxPolyOrder=5):
+def getAccuracyEstimates(energies, assignments, curvename="gain", maxPolyOrder=5):
     """
     energies : Physical energies of peaks
     assignments : Array of possible peak combinations
@@ -109,23 +137,30 @@ def getPeakCombinations(positions, npeaks, autoinclude=1):
 
 
 def debugAssignment(ds, attr, states, ph_fwhm, line_names, assignment="nsls", **kwargs):
-    peak_ph_vals, _peak_heights = mass.algorithms.find_local_maxima(ds.getAttr(attr, indsOrStates=states), ph_fwhm)
+    peak_ph_vals, _peak_heights = mass.algorithms.find_local_maxima(
+        ds.getAttr(attr, indsOrStates=states), ph_fwhm
+    )
 
 
-def ds_learnCalibrationPlanFromEnergiesAndPeaks(self, attr, states, ph_fwhm, line_names, assignment="nsls", **kwargs):
-    peak_positions, _peak_heights = mass.algorithms.find_local_maxima(self.getAttr(attr, indsOrStates=states), ph_fwhm)
+def ds_learnCalibrationPlanFromEnergiesAndPeaks(
+    self, attr, states, ph_fwhm, line_names, assignment="nsls", **kwargs
+):
+    peak_positions, _peak_heights = mass.algorithms.find_local_maxima(
+        self.getAttr(attr, indsOrStates=states), ph_fwhm
+    )
     if assignment == "nsls":
-        name_or_e, e_out, assignment, rms = assignPeaks(peak_positions,
-                                                        line_names, rms_cutoff=1,
-                                                        **kwargs)
+        name_or_e, e_out, assignment, rms = assignPeaks(
+            peak_positions, line_names, rms_cutoff=1, **kwargs
+        )
     else:
-        name_or_e, e_out, assignment = mass.algorithms.find_opt_assignment(peak_positions,
-                                                                           line_names, maxacc=0.1, **kwargs)
+        name_or_e, e_out, assignment = mass.algorithms.find_opt_assignment(
+            peak_positions, line_names, maxacc=0.1, **kwargs
+        )
         rms = None
 
     self.calibrationPlanInit(attr)
     for ph, name in zip(assignment, name_or_e):
-        if type(name) == str:
+        if type(name) is str:
             self.calibrationPlanAddPoint(ph, name, states=states)
         else:
             energy = name
@@ -133,15 +168,18 @@ def ds_learnCalibrationPlanFromEnergiesAndPeaks(self, attr, states, ph_fwhm, lin
             self.calibrationPlanAddPoint(ph, name, states=states, energy=energy)
     return e_out, assignment, rms
 
-mass.off.Channel.learnCalibrationPlanFromEnergiesAndPeaks = ds_learnCalibrationPlanFromEnergiesAndPeaks
+
+mass.off.Channel.learnCalibrationPlanFromEnergiesAndPeaks = (
+    ds_learnCalibrationPlanFromEnergiesAndPeaks
+)
 
 
-def data_calibrationLoadFromHDF5Simple(self, h5name, recipeName='energy'):
+def data_calibrationLoadFromHDF5Simple(self, h5name, recipeName="energy"):
     print(f"loading calibration from {h5name}")
     with h5py.File(h5name, "r") as h5:
         nchans = len(list(h5.keys()))
         print(f"Calibration for {nchans} channels found")
-        calibrationAttr = h5.attrs.get('calAttr', 'filtValue')
+        calibrationAttr = h5.attrs.get("calAttr", "filtValue")
         for channum_str in h5.keys():
             cal = mass.calibration.EnergyCalibration.load_from_hdf5(h5, channum_str)
             channum = int(channum_str)
@@ -153,16 +191,18 @@ def data_calibrationLoadFromHDF5Simple(self, h5name, recipeName='energy'):
         if recipeName not in ds.recipes.keys():
             ds.markBad("no loaded calibration")
 
+
 mass.off.ChannelGroup.calibrationLoadFromHDF5Simple = data_calibrationLoadFromHDF5Simple
 
 
-def data_calibrationSaveToHDF5Simple(self, h5name, recipeName='energy'):
+def data_calibrationSaveToHDF5Simple(self, h5name, recipeName="energy"):
     print(f"writing calibration to {h5name}")
     with h5py.File(h5name, "w") as h5:
         for ds in self.values():
             cal = ds.recipes[recipeName].f
             cal.save_to_hdf5(h5, f"{ds.channum}")
-        h5.attrs['calAttr'] = ds.calibrationPlanAttr
+        h5.attrs["calAttr"] = ds.calibrationPlanAttr
+
 
 mass.off.ChannelGroup.calibrationSaveToHDF5Simple = data_calibrationSaveToHDF5Simple
 
@@ -170,35 +210,47 @@ mass.off.ChannelGroup.calibrationSaveToHDF5Simple = data_calibrationSaveToHDF5Si
 def find_poly_residual(cal_energies, opt_assignment, degree, curvename="gain"):
     if curvename == "gain":
         x = opt_assignment
-        y = opt_assignment/cal_energies
+        y = opt_assignment / cal_energies
     elif curvename == "loglog":
         y = np.log(opt_assignment)
         x = np.log(cal_energies)
     elif curvename == "loggain":
         x = opt_assignment
-        y = np.log(opt_assignment/cal_energies)
+        y = np.log(opt_assignment / cal_energies)
     elif curvename == "linear":
         x = np.insert(opt_assignment, 0, 0.0)
         y = np.insert(cal_energies, 0, 0.0)
     coeff = np.polyfit(x, y, degree)
     poly = np.poly1d(coeff)
-    residual = poly(x)-y
-    residual_rms = np.sqrt(sum(np.square(residual))/len(cal_energies))
+    residual = poly(x) - y
+    residual_rms = np.sqrt(sum(np.square(residual)) / len(cal_energies))
     return coeff, residual, residual_rms
 
 
-def data_calibrate(self, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2,
-                   assignment="nsls", recipeName="energy", **kwargs):
+def data_calibrate(
+    self,
+    cal_state,
+    line_names,
+    fv="filtValueDC",
+    rms_cutoff=0.2,
+    assignment="nsls",
+    recipeName="energy",
+    **kwargs,
+):
     self.setDefaultBinsize(0.2)
     # ds.plotHist(np.arange(0,30000,10), fv, states=None)
     line_energies = get_line_energies(line_names)
     # ds.diagnoseCalibration()
     for ds in self.values():
         try:
-            e_out, peaks, rms = ds.learnCalibrationPlanFromEnergiesAndPeaks(attr=fv, ph_fwhm=50,
-                                                                            states=cal_state,
-                                                                            line_names=line_energies,
-                                                                            assignment=assignment, **kwargs)
+            e_out, peaks, rms = ds.learnCalibrationPlanFromEnergiesAndPeaks(
+                attr=fv,
+                ph_fwhm=50,
+                states=cal_state,
+                line_names=line_energies,
+                assignment=assignment,
+                **kwargs,
+            )
             if rms < rms_cutoff:
                 print(f"Calibrating {ds.channum} succeeded with rms: {rms}")
         except ValueError:
@@ -206,14 +258,15 @@ def data_calibrate(self, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2
             ds.markBad("Failed peak assignment")
 
     # self.alignToReferenceChannel(ds, fv, np.arange(1000, 27000,  10))
-    self.calibrateFollowingPlan(fv, calibratedName=recipeName, dlo=7, dhi=7,
-                                overwriteRecipe=True)
+    self.calibrateFollowingPlan(
+        fv, calibratedName=recipeName, dlo=7, dhi=7, overwriteRecipe=True
+    )
     for ds in self.values():
         # ds.calibrateFollowingPlan(fv, overwriteRecipe=True, dlo=7, dhi=7)
 
         ecal = ds.recipes[recipeName].f
         degree = min(len(ecal._ph) - 1, 2)
-        _, _, rms = find_poly_residual(ecal._energies, ecal._ph, degree, 'gain')
+        _, _, rms = find_poly_residual(ecal._energies, ecal._ph, degree, "gain")
         if np.any(ecal._ph < 0):
             msg = "Failed calibration with ph < 0"
             print(msg)
@@ -227,22 +280,26 @@ def data_calibrate(self, cal_state, line_names, fv="filtValueDC", rms_cutoff=0.2
         try:
             ds.getAttr(recipeName, cal_state)[:10]
         except ValueError:
-            ds.markBad("ValueError on energy access, calibration curve is probably broken")
+            ds.markBad(
+                "ValueError on energy access, calibration curve is probably broken"
+            )
 
 
 mass.off.ChannelGroup.calibrate = data_calibrate
 
 
-def make_calibration(calinfo, savedir=None, overwrite=False, rms_cutoff=0.2,
-                     cal_file_name=None, **kwargs):
+def make_calibration(
+    calinfo, savedir=None, overwrite=False, rms_cutoff=0.2, cal_file_name=None, **kwargs
+):
     attr = "filtValueDC" if calinfo.driftCorrected else "filtValue"
 
     if cal_file_name is None:
         cal_file_name = calinfo.cal_file
 
     if should_make_new_calibration(cal_file_name, overwrite):
-        calinfo.data.calibrate(calinfo.state, calinfo.line_names, fv=attr,
-                               rms_cutoff=rms_cutoff, **kwargs)
+        calinfo.data.calibrate(
+            calinfo.state, calinfo.line_names, fv=attr, rms_cutoff=rms_cutoff, **kwargs
+        )
         calinfo._calibrated = True
         save_calibration(calinfo, cal_file_name)
     if not calinfo.calibrated:
@@ -274,16 +331,16 @@ def load_calibration(rd, calinfo):
     rd._calibrated = True
     rd._calmd = {"cal_state": calinfo.state, "cal_file": calinfo.cal_file}
 
-from matplotlib.gridspec import GridSpec
 
 class CalFigure:
-    def __init__(self, line_names, line_energies, figsize=None,
-                 title="Stacked calibration"):
+    def __init__(
+        self, line_names, line_energies, figsize=None, title="Stacked calibration"
+    ):
         naxes = len(line_names)
         self.line_names = line_names
         self.line_energies = line_energies
         if figsize is None:
-            figsize = (2*naxes, 8)
+            figsize = (2 * naxes, 8)
         self.fig = plt.figure(figsize=figsize)
         self.fig.subplots_adjust(wspace=0)
         gs = GridSpec(2, naxes)
@@ -302,11 +359,11 @@ class CalFigure:
             self.panel.axvline(energy)
         self.fig.suptitle(title)
 
-    def plot_ds_calibration(self, ds, state,
-                            legend=True):
-        bins = np.arange(np.min(self.line_energies) - 50,
-                         np.max(self.line_energies) + 50, 1)
-        centers = 0.5*(bins[1:] + bins[:-1])
+    def plot_ds_calibration(self, ds, state, legend=True):
+        bins = np.arange(
+            np.min(self.line_energies) - 50, np.max(self.line_energies) + 50, 1
+        )
+        centers = 0.5 * (bins[1:] + bins[:-1])
         energies = ds.getAttr("energy", state)
         counts, _ = np.histogram(energies, bins)
         max_ylim = 0
@@ -326,29 +383,14 @@ class CalFigure:
 
     def close(self):
         plt.close(self.fig)
-        
-def _make_panel_figure(line_names, line_energies, figsize=None,
-                       title="Stacked calibration"):
-    naxes = len(line_names)
-    if figsize is None:
-        figsize = (2*naxes, 4)
-    fig = plt.figure(figsize=figsize)
-    fig.subplots_adjust(wspace=0)
-    axlist = fig.subplots(1, naxes, sharey=True)
-    for i in range(naxes):
-        name = line_names[i]
-        energy = line_energies[i]
-        axlist[i].set_xlim(energy - 20, energy + 20)
-        axlist[i].set_title(name)
-        axlist[i].axvline(energy)
-    fig.suptitle(title)
-    return fig, axlist
 
-def _make_single_figure(line_names, line_energies, figsize=None,
-                        title="Stacked calibration"):
+
+def _make_panel_figure(
+    line_names, line_energies, figsize=None, title="Stacked calibration"
+):
     naxes = len(line_names)
     if figsize is None:
-        figsize = (2*naxes, 4)
+        figsize = (2 * naxes, 4)
     fig = plt.figure(figsize=figsize)
     fig.subplots_adjust(wspace=0)
     axlist = fig.subplots(1, naxes, sharey=True)
@@ -362,11 +404,28 @@ def _make_single_figure(line_names, line_energies, figsize=None,
     return fig, axlist
 
 
-def plot_ds_calibration(ds, state, line_energies,
-                        axlist, legend=True):
-    bins = np.arange(np.min(line_energies) - 50,
-                     np.max(line_energies) + 50, 1)
-    centers = 0.5*(bins[1:] + bins[:-1])
+def _make_single_figure(
+    line_names, line_energies, figsize=None, title="Stacked calibration"
+):
+    naxes = len(line_names)
+    if figsize is None:
+        figsize = (2 * naxes, 4)
+    fig = plt.figure(figsize=figsize)
+    fig.subplots_adjust(wspace=0)
+    axlist = fig.subplots(1, naxes, sharey=True)
+    for i in range(naxes):
+        name = line_names[i]
+        energy = line_energies[i]
+        axlist[i].set_xlim(energy - 20, energy + 20)
+        axlist[i].set_title(name)
+        axlist[i].axvline(energy)
+    fig.suptitle(title)
+    return fig, axlist
+
+
+def plot_ds_calibration(ds, state, line_energies, axlist, legend=True):
+    bins = np.arange(np.min(line_energies) - 50, np.max(line_energies) + 50, 1)
+    centers = 0.5 * (bins[1:] + bins[:-1])
     energies = ds.getAttr("energy", state)
     counts, _ = np.histogram(energies, bins)
 
@@ -379,19 +438,28 @@ def plot_ds_calibration(ds, state, line_energies,
 def summarize_calibration(calinfo, overwrite=False):
     """
     Should try to produce an overall summary
-    Also, splitting into panels sometimes makes it hard to figure out if we are globally misaligned
+    Also, splitting into panels sometimes makes it hard to figure out if we
+    are globally misaligned
+
+    Now saves summaries into current directory as well as save directory
     """
-    savedir = calinfo.savefile[:-4] + '_summary'
+    savedir = calinfo.savefile[:-4] + "_summary"
+    curdir = path.basename(savedir)
     print(f"Saving summaries to {savedir}")
-    if not os.path.exists(savedir):
+    if not path.exists(savedir):
         os.makedirs(savedir)
+    if not path.exists(curdir):
+        os.makedirs(curdir)
     line_names = calinfo.line_names
     line_energies = get_line_energies(line_names)
     nstack = 8
     naxes = len(calinfo.line_names)
-    bigfig = CalFigure(line_names, line_energies,
-                       figsize=(3*naxes, 6),
-                       title="All ds calibration stacked")
+    bigfig = CalFigure(
+        line_names,
+        line_energies,
+        figsize=(3 * naxes, 6),
+        title="All ds calibration stacked",
+    )
     fig = CalFigure(line_names, line_energies)
     startchan = 1
     for n, chan in enumerate(calinfo.data):
