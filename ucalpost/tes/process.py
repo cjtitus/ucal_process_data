@@ -44,7 +44,9 @@ def calibrate(rd, calinfo, redo=False, overwrite=False, rms_cutoff=2, **kwargs):
         print("Calibration already loaded")
 
 
-def process(rd, calinfo, redo=False, rms_cutoff=0.2, dc=True, overwrite=False, **cal_kwargs):
+def process(
+    rd, calinfo, redo=False, rms_cutoff=0.2, dc=True, overwrite=False, **cal_kwargs
+):
     savefile = rd.savefile
     metafile = os.path.splitext(rd.savefile)[0] + ".yaml"
     state = rd.state
@@ -58,7 +60,9 @@ def process(rd, calinfo, redo=False, rms_cutoff=0.2, dc=True, overwrite=False, *
     if dc:
         drift_correct(rd)
         drift_correct(calinfo)
-    calibrate(rd, calinfo, redo=redo, rms_cutoff=rms_cutoff, **cal_kwargs)
+    calibrate(
+        rd, calinfo, redo=redo, rms_cutoff=rms_cutoff, overwrite=overwrite, **cal_kwargs
+    )
 
 
 def save_tes_arrays(rd, overwrite=False):
@@ -91,10 +95,12 @@ def save_tes_arrays(rd, overwrite=False):
     ch_arr = np.concatenate(channels)
     sort_idx = np.argsort(ts_arr)
     print(f"Saving {savefile}")
-    np.savez(savefile,
-             timestamps=ts_arr[sort_idx],
-             energies=en_arr[sort_idx],
-             channels=ch_arr[sort_idx])
+    np.savez(
+        savefile,
+        timestamps=ts_arr[sort_idx],
+        energies=en_arr[sort_idx],
+        channels=ch_arr[sort_idx],
+    )
     md = rd.getProcessMd()
-    with open(metafile, 'w') as f:
+    with open(metafile, "w") as f:
         yaml.dump(md, f)
