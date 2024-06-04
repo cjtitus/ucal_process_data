@@ -235,7 +235,10 @@ def process_catalog(catalog, skip_bad_ADR=True, parent_catalog=None, **kwargs):
         smin = min(scans)
         smax = max(scans)
         print(f"Processing from {smin} to {smax}")
-        cal_ids = ncat.list_meta_key_vals("last_cal") | ncat.filter_by_scantype("calibration").list_uid()
+        cal_ids = (
+            ncat.list_meta_key_vals("last_cal")
+            | ncat.filter_by_scantype("calibration").list_uid()
+        )
         try:
             default_cal = list(cal_ids)[0]
         except IndexError:
@@ -257,8 +260,14 @@ def process_catalog(catalog, skip_bad_ADR=True, parent_catalog=None, **kwargs):
                     )
                     continue
             if parent_catalog is not None:
-                cal = parent_catalog[get_cal_id(run, default_cal)]
+                if run.start.get("scantype", None) != "calibration":
+                    cal = parent_catalog[get_cal_id(run, default_cal)]
+                else:
+                    cal = run
                 process_run(run, parent_catalog, loader, cal, **kwargs)
             else:
-                cal = catalog[get_cal_id(run, default_cal)]
+                if run.start.get("scantype", None) != "calibration":
+                    cal = catalog[get_cal_id(run, default_cal)]
+                else:
+                    cal = run
                 process_run(run, catalog, loader, cal, **kwargs)

@@ -481,10 +481,13 @@ def summarize_calibration(calinfo, overwrite=False):
         lastchan = chan
         # work in progress
     bigfig.save(os.path.join(savedir, "cal_summary_all_chan.png"))
+    bigfig.save(os.path.join(curdir, "cal_summary_all_chan.png"))
 
     filename = f"cal_{startchan}_to_{lastchan}.png"
     savename = os.path.join(savedir, filename)
+    curname = os.path.join(curdir, filename)
     if not os.path.exists(savename) or overwrite:
         fig.save(savename)
-    else:
-        fig.close()
+    if not os.path.exists(curname) or overwrite:
+        fig.save(curname)
+    fig.close()

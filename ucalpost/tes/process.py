@@ -32,13 +32,14 @@ def calibrate(rd, calinfo, redo=False, overwrite=False, rms_cutoff=2, **kwargs):
     overwrite : passed to make_calibration, summarize_calibration, and save_tes_arrays
     """
     if not calinfo.calibrated or redo:
-        print(f"Calibrating {rd.state}")
+        print(f"Calibrating {calinfo.state}")
         make_calibration(calinfo, overwrite=overwrite, rms_cutoff=rms_cutoff, **kwargs)
         summarize_calibration(calinfo, overwrite=overwrite)
         save_tes_arrays(calinfo, overwrite=overwrite)
     else:
         print("Calibration already present")
     if not rd.calibrated:
+        print(f"Loading calibration for {rd.state}")
         load_calibration(rd, calinfo)
     else:
         print("Calibration already loaded")
