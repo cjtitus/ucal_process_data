@@ -3,9 +3,20 @@ from mass.off import getOffFileListFromOneFile as getOffList
 import os
 from os import path
 from ucalpost.tes.calibration import _calibrate
-from ucalpost.databroker.run import get_tes_state, get_line_names, get_filename, get_save_directory
-from ucalpost.tes.process_routines import get_analyzed_filename
+from ucalpost.databroker.run import (
+    get_tes_state,
+    get_line_names,
+    get_filename,
+    get_save_directory,
+)
+from ucalpost.tes.loader import get_analyzed_filename
 import numpy as np
+
+"""
+Unfinished concept for a process catalog object that would replace loader/RawData/CalInfo
+
+Return to this later?
+"""
 
 
 class CatalogData:
@@ -42,7 +53,7 @@ class CatalogData:
         except:
             return False
 
-    def saveStateArray(self, state, attr='energy', overwrite=False):
+    def saveStateArray(self, state, attr="energy", overwrite=False):
         savefile = self.savenames[state]
         # metafile = path.splitext(savefile)[0] + ".yaml"
         savedir = path.dirname(savefile)
@@ -71,12 +82,14 @@ class CatalogData:
         ch_arr = np.concatenate(channels)
         sort_idx = np.argsort(ts_arr)
         print(f"Saving {savefile}")
-        np.savez(savefile,
-                 timestamps=ts_arr[sort_idx],
-                 energies=en_arr[sort_idx],
-                 channels=ch_arr[sort_idx])
-        #md = rd.getProcessMd()
-        #with open(metafile, 'w') as f:
+        np.savez(
+            savefile,
+            timestamps=ts_arr[sort_idx],
+            energies=en_arr[sort_idx],
+            channels=ch_arr[sort_idx],
+        )
+        # md = rd.getProcessMd()
+        # with open(metafile, 'w') as f:
         #    yaml.dump(md, f)
 
 
@@ -96,24 +109,25 @@ def driftCorrect(catalog, states=None, redo=False):
 
 def getCalibrationSavefile(catalog, state):
     savedir = get_save_directory(run)
-    savebase = "_".join(path.basename(catalog.off_filename).split('_')[:-1])
+    savebase = "_".join(path.basename(catalog.off_filename).split("_")[:-1])
     savefile = path.join(savedir, f"{savebase}_{state}_cal.hdf5")
     return savefile
 
-def makeStateCalibration(catalog, state, attr, rms_cutoff=0.2, save=True,
-                         **kwargs):
+
+def makeStateCalibration(catalog, state, attr, rms_cutoff=0.2, save=True, **kwargs):
     data = catalog.data
     run = catalog.run_dict[state]
 
-    line_names = kwargs.get('line_names', get_line_names(run))
+    line_names = kwargs.get("line_names", get_line_names(run))
 
     recipeName = f"energy_{state}"
-    if 'savefile' not in kwargs:
+    if "savefile" not in kwargs:
         savefile = getCalibrationSavefile(catalog, state)
     else:
-        savefile = kwargs['savefile']
-    _calibrate(data, state, line_names, fv=attr, rms_cutoff=rms_cutoff,
-               recipeName=recipeName)
+        savefile = kwargs["savefile"]
+    _calibrate(
+        data, state, line_names, fv=attr, rms_cutoff=rms_cutoff, recipeName=recipeName
+    )
     if save:
         if not path.exists(path.dirname(savefile)):
             os.makedirs(path.dirname(savefile))
@@ -123,11 +137,11 @@ def makeStateCalibration(catalog, state, attr, rms_cutoff=0.2, save=True,
 def loadStateCalibration(catalog, state, **kwargs):
     run = catalog.run_dict[state]
     savedir = get_save_directory(run)
-    if 'savefile' not in kwargs:
-        savebase = "_".join(path.basename(catalog.off_filename).split('_')[:-1])
+    if "savefile" not in kwargs:
+        savebase = "_".join(path.basename(catalog.off_filename).split("_")[:-1])
         savefile = path.join(savedir, f"{savebase}_{state}_cal.hdf5")
     else:
-        savefile = kwargs['savefile']
+        savefile = kwargs["savefile"]
     recipeName = f"energy_{state}"
     catalog.data.calibrationLoadFromHDF5Simple(savefile, recipeName)
 
@@ -136,15 +150,22 @@ def loadCompoundCalibration(catalog, data_states=None, cal_states=None):
     pass
 
 
-def calibrate(catalog, states=None, attr=None, stateOptions={}, rms_cutoff=0.2,
-              save=True, saveSummary=True):
+def calibrate(
+    catalog,
+    states=None,
+    attr=None,
+    stateOptions={},
+    rms_cutoff=0.2,
+    save=True,
+    saveSummary=True,
+):
     cal_md = {}
     if states is None:
         states = catalog.cal_states
     if attr is None:
-        attr = 'filtValueDC' if catalog.driftCorrected else 'filtValue'
-    cal_md['states'] = states
-    cal_md['attr'] = attr
+        attr = "filtValueDC" if catalog.driftCorrected else "filtValue"
+    cal_md["states"] = states
+    cal_md["attr"] = attr
     for state in catalog.cal_states:
         opt = stateOptions.get(state, {})
         makeStateCalibration(catalog, state, attr, rms_cutoff, save, **opt)
@@ -160,8 +181,8 @@ def summarize_calibration(catalog, state, savedir=None):
 def get_cal_runs(noise_catalog):
     cal_list = []
     for run in noise_catalog._catalog.values():
-        scantype = run.start.get('scantype', 'data')
-        if scantype == 'calibration':
+        scantype = run.start.get("scantype", "data")
+        if scantype == "calibration":
             cal_list.append(run)
     return cal_list
 
@@ -169,8 +190,8 @@ def get_cal_runs(noise_catalog):
 def get_data_runs(noise_catalog):
     data_list = []
     for run in noise_catalog._catalog.values():
-        scantype = run.start.get('scantype', 'data')
-        if scantype != 'calibration':
+        scantype = run.start.get("scantype", "data")
+        if scantype != "calibration":
             data_list.append(run)
     return data_list
 

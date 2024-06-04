@@ -1,4 +1,7 @@
-import numpy as np
+from os import path
+import mass
+import mass.off
+from mass.off import getOffFileListFromOneFile as getOffList
 from ..databroker.run import (
     get_filename,
     get_cal,
@@ -7,8 +10,7 @@ from ..databroker.run import (
     get_save_directory,
     get_cal_id,
 )
-from .raw_classes import RawData, CalibrationInfo
-from .raw_routines import process, save_tes_arrays
+from .process import process, save_tes_arrays
 from .process_classes import get_analyzed_filename
 from ..tools.utils import merge_func
 
@@ -19,6 +21,89 @@ from ..tools.utils import merge_func
 # Only works when cal and data are in same file
 
 
+class RawData:
+    def __init__(self, off_filename, state, savefile, data=None):
+        self.off_filename = off_filename
+        self.attribute = "filtValueDC"
+        self.state = state
+        self.savefile = savefile
+        self.load_data(data)
+        self.load_ds()
+        self._calibrated = False
+        self._calmd = {}
+
+    def load_data(self, data=None):
+        if data is None:
+            data = mass.off.ChannelGroup(
+                getOffList(self.off_filename)[:1000], excludeStates=[]
+            )
+        elif self.off_filename not in data.offFileNames:
+            data = mass.off.ChannelGroup(
+                getOffList(self.off_filename)[:1000], excludeStates=[]
+            )
+        self.data = data
+
+    def load_ds(self):
+        self.ds = self.data.firstGoodChannel()
+
+    def refresh(self):
+        self.data.refreshFromFiles()
+
+    def update(self, state, savefile):
+        self.state = state
+        self.savefile = savefile
+        self.refresh()
+
+    def getProcessMd(self):
+        md = {"driftCorrected": self.driftCorrected, "calibration": self._calmd}
+        return md
+
+    @property
+    def calibrated(self):
+        try:
+            return hasattr(self.ds, "energy") and self._calibrated
+        except:
+            return False
+
+    @property
+    def driftCorrected(self):
+        try:
+            return hasattr(self.ds, "filtValueDC")
+        except:
+            return False
+
+
+class CalibrationInfo(RawData):
+    def __init__(self, off_filename, state, savefile, savedir, line_names, **kwargs):
+        super().__init__(off_filename, state, savefile, **kwargs)
+        self.line_names = line_names
+        self.cal_file = None
+        self.savedir = savedir
+        self.update_calibration()
+
+    def update(self, state, savefile, savedir, line_names):
+        super().update(state, savefile)
+        self.savedir = savedir
+        self.line_names = line_names
+        self.update_calibration()
+
+    def update_calibration(self, savedir=None):
+        if savedir is None:
+            savedir = self.savedir
+        else:
+            self.savedir = savedir
+        if savedir is not None:
+            savebase = "_".join(path.basename(self.off_filename).split("_")[:-1])
+            savename = f"{savebase}_{self.state}_cal.hdf5"
+            new_cal_file = path.join(savedir, savename)
+            if new_cal_file != self.cal_file:
+                self.cal_file = new_cal_file
+                self._calibrated = False
+        else:
+            self.cal_file = None
+            self._calibrated = False
+
+
 class AnalysisLoader:
     def __init__(self, catalog):
         self.catalog = catalog
@@ -26,7 +111,7 @@ class AnalysisLoader:
         self.rd = None
         self.ci = None
 
-    def getAnalysisObjects(self, run, cal=None):
+    def getAnalysisObjects(self, run, cal=None, line_names=None):
         off_filename = get_filename(run)
         state = get_tes_state(run)
         savefile = get_analyzed_filename(run)
@@ -45,7 +130,8 @@ class AnalysisLoader:
                 cal = get_cal(run, self.catalog)
         cal_savedir = get_save_directory(cal)
         cal_state = get_tes_state(cal)
-        line_names = get_line_names(cal)
+        if line_names is None:
+            line_names = get_line_names(cal)
         cal_filename = get_filename(cal)
         cal_savefile = get_analyzed_filename(cal)
 
@@ -74,7 +160,9 @@ class AnalysisLoader:
         return self.rd, self.ci
 
 
-def process_run(run, catalog, loader=None, cal=None, redo=False, overwrite=False, **kwargs):
+def process_run(
+    run, catalog, loader=None, cal=None, redo=False, overwrite=False, **kwargs
+):
     """
     Process a single run of data.
 

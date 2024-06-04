@@ -1,5 +1,5 @@
 from .run import summarize_run
-from ..tes.process_routines import process_catalog
+from ..tes.loader import process_catalog
 from ..tes.process_classes import is_run_processed
 from .export import export_run_to_analysis_catalog
 from databroker.queries import PartialUID, TimeRange, Key
