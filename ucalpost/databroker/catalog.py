@@ -16,8 +16,8 @@ def getWDB(profile):
 
 class WrappedDatabroker(WrappedCatalogBase):
     KEY_MAP = {
-        "samples": "sample_args.sample_name.value",
-        "groups": "group_md.name",
+        "samples": "sample_name",
+        "groups": "group_name",
         "edges": "edge",
         "noise": "last_noise",
         "scantype": "scantype",
@@ -257,3 +257,14 @@ class WrappedDatabroker(WrappedCatalogBase):
 
 
 # wdb = WrappedDatabroker(db)
+class WrappedDatabrokerOld(WrappedDatabroker):
+    KEY_MAP = {
+        "samples": "sample_args.sample_name.value",
+        "groups": "group_md.name",
+        "edges": "edge",
+        "noise": "last_noise",
+        "scantype": "scantype",
+        "proposal": "proposal",
+        "uid": "uid",
+        "beamtime_start": "beamtime_start",
+    }

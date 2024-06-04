@@ -161,7 +161,14 @@ class AnalysisLoader:
 
 
 def process_run(
-    run, catalog, loader=None, cal=None, redo=False, overwrite=False, **kwargs
+    run,
+    catalog,
+    loader=None,
+    cal=None,
+    redo=False,
+    overwrite=False,
+    line_names=None,
+    **kwargs,
 ):
     """
     Process a single run of data.
@@ -193,7 +200,7 @@ def process_run(
     """
     if loader is None:
         loader = AnalysisLoader(catalog)
-    rd, calinfo = loader.getAnalysisObjects(run, cal)
+    rd, calinfo = loader.getAnalysisObjects(run, cal, line_names=line_names)
     print(f"Processing {rd.off_filename}, state: {rd.state}")
     process(rd, calinfo, redo=redo, overwrite=overwrite, **kwargs)
     print(f"Saving TES Arrays to {rd.savefile}")
