@@ -44,7 +44,17 @@ def calibrate(rd, calinfo, redo=False, overwrite=False, rms_cutoff=2, **kwargs):
         print("Calibration already loaded")
 
 
-def process(rd, calinfo, redo=False, rms_cutoff=0.2, dc=True, **cal_kwargs):
+def process(rd, calinfo, redo=False, rms_cutoff=0.2, dc=True, overwrite=False, **cal_kwargs):
+    savefile = rd.savefile
+    metafile = os.path.splitext(rd.savefile)[0] + ".yaml"
+    state = rd.state
+    savedir = os.path.dirname(savefile)
+    if not os.path.exists(savedir):
+        os.makedirs(savedir)
+    if os.path.exists(savefile) and not overwrite:
+        print(f"Not going to overwrite {savefile}, moving on")
+        return
+
     if dc:
         drift_correct(rd)
         drift_correct(calinfo)

@@ -140,17 +140,22 @@ def process_catalog(catalog, skip_bad_ADR=True, parent_catalog=None, **kwargs):
         smin = min(scans)
         smax = max(scans)
         print(f"Processing from {smin} to {smax}")
-        cal_ids = ncat.list_meta_key_vals("last_cal")
-        default_cal = list(cal_ids)[0]
+        cal_ids = ncat.list_meta_key_vals("last_cal") | ncat.filter_by_scantype("calibration").list_uid()
+        try:
+            default_cal = list(cal_ids)[0]
+        except IndexError:
+            print("No calibration present!")
+            raise
         for run in ncat.values():
+            print(f"Processing {run.start['scan_id']}")
             if skip_bad_ADR:
                 try:
                     last_adr_value = run.baseline["data"]["adr_heater"][1]
-                except KeyError:
+                except (KeyError, AttributeError):
                     print(
-                        f"run {run.start['scan_id']} has no ADR data in baseline, but ADR check was requested, aborting"
+                        f"run {run.start['scan_id']} has no ADR data in baseline, but ADR check was requested, not processing, moving on"
                     )
-                    raise
+                    continue
                 if last_adr_value < 0.1:
                     print(
                         f"Last ADR magnet value for run {run.start['scan_id']} was {last_adr_value}, skipping"
