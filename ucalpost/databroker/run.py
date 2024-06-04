@@ -72,8 +72,8 @@ def get_line_names(cal_run):
     samplename = get_samplename(cal_run)
     if samplename == 'mixv1':
         energy = cal_run.start.get('calibration_energy', 980)
-        line_energies = np.array([300, 400, 525, 715, 840, 930, 1020])
-        line_names = np.array(['ck', 'nk', 'ok', 'fela', 'nila', 'cula', 'znla'])
+        line_energies = np.array([300, 400, 525, 715, 840, 930, 950, 1020])
+        line_names = np.array(['ck', 'nk', 'ok', 'fela', 'nila', 'cula', "culb", 'znla'])
         return list(line_names[line_energies < energy])
     else:
         return ["ck", "nk", "ok", "fela", "nila", "cula"]
@@ -97,7 +97,9 @@ def getRunFromStop(doc, catalog):
 
 
 def get_samplename(run):
-    if 'sample_md' in run.start:
+    if "sample_name" in run.start:
+        return run.start["sample_name"]
+    elif 'sample_md' in run.start:
         return run.start['sample_md']['name']
     elif 'sample_args' in run.start:
         return run.start['sample_args']['sample_name']['value']
