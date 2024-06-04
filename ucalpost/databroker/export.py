@@ -202,14 +202,15 @@ def get_data_and_header(run, infer_rois=True, rois=[], channels=None):
             _rois[roi] = roiMaster[roi]
         else:
             _rois[roi[2]] = (roi[0], roi[1])
-    tes_keys, tes_data = get_tes_data(run, _rois, channels=channels)
-    for i, k in enumerate(tes_keys):
-        if k in columns:
-            update_idx = columns.index(k)
-            run_data[update_idx] = tes_data[i]
-        else:
-            columns.append(k)
-            run_data.append(tes_data[i])
+    if _rois is not {}:
+        tes_keys, tes_data = get_tes_data(run, _rois, channels=channels)
+        for i, k in enumerate(tes_keys):
+            if k in columns:
+                update_idx = columns.index(k)
+                run_data[update_idx] = tes_data[i]
+            else:
+                columns.append(k)
+                run_data.append(tes_data[i])
     data = np.vstack(run_data).T
     header["channelinfo"]["cols"] = columns
     header["channelinfo"]["weights"] = {}
