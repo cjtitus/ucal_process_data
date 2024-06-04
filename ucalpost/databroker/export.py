@@ -202,7 +202,7 @@ def get_data_and_header(run, infer_rois=True, rois=[], channels=None):
             _rois[roi] = roiMaster[roi]
         else:
             _rois[roi[2]] = (roi[0], roi[1])
-    if _rois is not {}:
+    if _rois != {}:
         tes_keys, tes_data = get_tes_data(run, _rois, channels=channels)
         for i, k in enumerate(tes_keys):
             if k in columns:
