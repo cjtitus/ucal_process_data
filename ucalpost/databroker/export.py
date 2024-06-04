@@ -93,31 +93,31 @@ def get_run_header(run):
     motors["exslit"] = get_with_fallbacks(baseline, "Exit Slit of Mono Vertical Gap")[
         0
     ].item()
-    motors["manipx"] = get_with_fallbacks(baseline, "manip_x", "Manipulator_x")[
-        0
-    ].item()
-    motors["manipy"] = get_with_fallbacks(baseline, "manip_y", "Manipulator_y")[
-        0
-    ].item()
-    motors["manipz"] = get_with_fallbacks(baseline, "manip_z", "Manipulator_z")[
-        0
-    ].item()
-    motors["manipr"] = get_with_fallbacks(baseline, "manip_r", "Manipulator_r")[
-        0
-    ].item()
-    motors["samplex"] = get_with_fallbacks(baseline, "manip_sx", "Manipulator_sx")[
-        0
-    ].item()
-    motors["sampley"] = get_with_fallbacks(baseline, "manip_sy", "Manipulator_sy")[
-        0
-    ].item()
-    motors["samplez"] = get_with_fallbacks(baseline, "manip_sz", "Manipulator_sz")[
-        0
-    ].item()
-    motors["sampler"] = get_with_fallbacks(baseline, "manip_sr", "Manipulator_sr")[
-        0
-    ].item()
-    motors["tesz"] = get_with_fallbacks(baseline, "tesz")[0].item()
+    motors["manipx"] = float(
+        get_with_fallbacks(baseline, "manip_x", "Manipulator_x", default=[0])[0]
+    )
+    motors["manipy"] = float(
+        get_with_fallbacks(baseline, "manip_y", "Manipulator_y", default=[0])[0]
+    )
+    motors["manipz"] = float(
+        get_with_fallbacks(baseline, "manip_z", "Manipulator_z", default=[0])[0]
+    )
+    motors["manipr"] = float(
+        get_with_fallbacks(baseline, "manip_r", "Manipulator_r", default=[0])[0]
+    )
+    motors["samplex"] = float(
+        get_with_fallbacks(baseline, "manip_sx", "Manipulator_sx", default=[0])[0]
+    )
+    motors["sampley"] = float(
+        get_with_fallbacks(baseline, "manip_sy", "Manipulator_sy", default=[0])[0]
+    )
+    motors["samplez"] = float(
+        get_with_fallbacks(baseline, "manip_sz", "Manipulator_sz", default=[0])[0]
+    )
+    motors["sampler"] = float(
+        get_with_fallbacks(baseline, "manip_sr", "Manipulator_sr", default=[0])[0]
+    )
+    motors["tesz"] = float(get_with_fallbacks(baseline, "tesz", default=[0])[0])
     metadata["scaninfo"] = scaninfo
     metadata["motors"] = motors
     metadata["channelinfo"] = {}
