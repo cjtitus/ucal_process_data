@@ -466,10 +466,12 @@ def summarize_calibration(calinfo, overwrite=False):
         if chan > startchan + nstack - 1:
             filename = f"cal_{startchan}_to_{startchan + nstack - 1}.png"
             savename = os.path.join(savedir, filename)
+            curname = os.path.join(curdir, filename)
             if not os.path.exists(savename) or overwrite:
                 fig.save(savename)
-            else:
-                fig.close()
+            if not os.path.exists(curname) or overwrite:
+                fig.save(curname)
+            fig.close()
             fig = CalFigure(line_names, line_energies)
             startchan = startchan + nstack
 
