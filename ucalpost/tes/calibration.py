@@ -150,7 +150,7 @@ def ds_learnCalibrationPlanFromEnergiesAndPeaks(
     )
     if assignment == "nsls":
         name_or_e, e_out, assignment, rms = assignPeaks(
-            peak_positions, line_names, rms_cutoff=1, **kwargs
+            peak_positions, line_names, **kwargs
         )
     else:
         name_or_e, e_out, assignment = mass.algorithms.find_opt_assignment(
@@ -250,6 +250,7 @@ def data_calibrate(
                 states=cal_state,
                 line_names=line_energies,
                 assignment=assignment,
+                rms_cutoff=rms_cutoff,
                 **kwargs,
             )
             if rms < rms_cutoff:
@@ -299,7 +300,12 @@ mass.off.ChannelGroup.calibrate = data_calibrate
 
 
 def make_calibration(
-    calinfo, savedir=None, overwrite=False, rms_cutoff=0.2, cal_file_name=None, **kwargs
+    calinfo,
+    savedir=None,
+    overwrite=False,
+    rms_cutoff=0.15,
+    cal_file_name=None,
+    **kwargs,
 ):
     attr = "filtValueDC" if calinfo.driftCorrected else "filtValue"
 
@@ -308,6 +314,7 @@ def make_calibration(
 
     if should_make_new_calibration(cal_file_name, overwrite):
         faildir = calinfo.savefile[:-4] + "_failures"
+        calinfo.data.markAllGood()
         calinfo.data.calibrate(
             calinfo.state,
             calinfo.line_names,
@@ -451,7 +458,9 @@ def plot_ds_calibration(ds, state, line_energies, axlist, legend=True):
         ax.legend()
 
 
-def summarize_failed_ds(ds, state, line_names, line_energies, savedir, reason=""):
+def summarize_failed_ds(
+    ds, state, line_names, line_energies, ph_vals, savedir, reason=""
+):
     fig = CalFigure(line_names, line_energies, title=f"{ds.channum}: {reason}")
     fig.plot_ds_calibration(ds, state)
 
@@ -459,6 +468,10 @@ def summarize_failed_ds(ds, state, line_names, line_energies, savedir, reason=""
     curdir = path.basename(savedir)
     savename = os.path.join(savedir, filename)
     curname = os.path.join(curdir, filename)
+    if not path.exists(savedir):
+        os.makedirs(savedir)
+    if not path.exists(curdir):
+        os.makedirs(curdir)
     fig.save(savename)
     fig.save(curname)
 
