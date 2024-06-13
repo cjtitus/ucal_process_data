@@ -48,6 +48,20 @@ def test_calibration(calinfo, rms_cutoff=0.2, **kwargs):
     )
 
 
+def plot_analysis_histogram(rd, attr, bmin, bmax, step, dslist):
+    bins = np.arange(bmin, bmax, step)
+    centers = 0.5 * (bins[1:] + bins[:-1])
+    data = rd.data
+    state = rd.state
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    for chan in dslist:
+        ds = data[chan]
+        vals = ds.getAttr(attr, state)
+        counts, _ = np.histogram(vals, bins)
+        ax.plot(centers, counts, label=f"Chan {ds.channum}")
+
+
 def plot_ds_histogram(ds, attr, state, bmin, bmax, axlist, step=1, legend=True):
     bins = np.arange(bmin, bmax, step)
     centers = 0.5 * (bins[1:] + bins[:-1])

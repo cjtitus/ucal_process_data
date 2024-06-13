@@ -235,6 +235,7 @@ def data_calibrate(
     rms_cutoff=0.2,
     assignment="nsls",
     recipeName="energy",
+    faildir=None,
     **kwargs,
 ):
     self.setDefaultBinsize(0.2)
@@ -267,22 +268,31 @@ def data_calibrate(
         ecal = ds.recipes[recipeName].f
         degree = min(len(ecal._ph) - 1, 2)
         _, _, rms = find_poly_residual(ecal._energies, ecal._ph, degree, "gain")
-        if np.any(ecal._ph < 0):
-            msg = "Failed calibration with ph < 0"
-            print(msg)
-            ds.markBad(msg)
-            continue
-        if rms > rms_cutoff:
-            msg = f"Failed calibration cut with RMS: {rms}, cutoff: {rms_cutoff}"
-            print(msg)
-            ds.markBad(msg)
-            continue
         try:
             ds.getAttr(recipeName, cal_state)[:10]
         except ValueError:
             ds.markBad(
                 "ValueError on energy access, calibration curve is probably broken"
             )
+            continue
+        if np.any(ecal._ph < 0):
+            msg = "Failed calibration with ph < 0"
+            print(msg)
+            ds.markBad(msg)
+            if faildir is not None:
+                summarize_failed_ds(
+                    ds, cal_state, line_names, line_energies, faildir, msg
+                )
+            continue
+        if rms > rms_cutoff:
+            msg = f"Failed calibration cut with RMS: {rms}, cutoff: {rms_cutoff}"
+            print(msg)
+            ds.markBad(msg)
+            if faildir is not None:
+                summarize_failed_ds(
+                    ds, cal_state, line_names, line_energies, faildir, msg
+                )
+            continue
 
 
 mass.off.ChannelGroup.calibrate = data_calibrate
@@ -297,8 +307,14 @@ def make_calibration(
         cal_file_name = calinfo.cal_file
 
     if should_make_new_calibration(cal_file_name, overwrite):
+        faildir = calinfo.savefile[:-4] + "_failures"
         calinfo.data.calibrate(
-            calinfo.state, calinfo.line_names, fv=attr, rms_cutoff=rms_cutoff, **kwargs
+            calinfo.state,
+            calinfo.line_names,
+            fv=attr,
+            rms_cutoff=rms_cutoff,
+            faildir=faildir,
+            **kwargs,
         )
         calinfo._calibrated = True
         save_calibration(calinfo, cal_file_name)
@@ -433,6 +449,18 @@ def plot_ds_calibration(ds, state, line_energies, axlist, legend=True):
         ax.plot(centers, counts, label=f"Chan {ds.channum}")
     if legend:
         ax.legend()
+
+
+def summarize_failed_ds(ds, state, line_names, line_energies, savedir, reason=""):
+    fig = CalFigure(line_names, line_energies, title=f"{ds.channum}: {reason}")
+    fig.plot_ds_calibration(ds, state)
+
+    filename = f"cal_{ds.channum}_failure.png"
+    curdir = path.basename(savedir)
+    savename = os.path.join(savedir, filename)
+    curname = os.path.join(curdir, filename)
+    fig.save(savename)
+    fig.save(curname)
 
 
 def summarize_calibration(calinfo, overwrite=False):

@@ -29,7 +29,8 @@ def calibrate(rd, calinfo, redo=False, overwrite=False, rms_cutoff=2, **kwargs):
     rd : A RawData object
     calinfo : a CalibrationInfo object
     redo : Whether we should re-calibrate even if calibration is loaded
-    overwrite : passed to make_calibration, summarize_calibration, and save_tes_arrays
+    overwrite : If we should ignore already on-disk calibration,
+                passed to make_calibration, summarize_calibration, and save_tes_arrays
     """
     if not calinfo.calibrated or redo:
         print(f"Calibrating {calinfo.state}")
