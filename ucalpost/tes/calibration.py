@@ -458,9 +458,7 @@ def plot_ds_calibration(ds, state, line_energies, axlist, legend=True):
         ax.legend()
 
 
-def summarize_failed_ds(
-    ds, state, line_names, line_energies, ph_vals, savedir, reason=""
-):
+def summarize_failed_ds(ds, state, line_names, line_energies, savedir, reason=""):
     fig = CalFigure(line_names, line_energies, title=f"{ds.channum}: {reason}")
     fig.plot_ds_calibration(ds, state)
 
