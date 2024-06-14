@@ -90,9 +90,9 @@ def get_run_header(run):
     scaninfo["raw_uid"] = run.start["uid"]
     motors = {}
     baseline = run.baseline.data.read()
-    motors["exslit"] = get_with_fallbacks(baseline, "Exit Slit of Mono Vertical Gap")[
-        0
-    ].item()
+    motors["exslit"] = get_with_fallbacks(
+        baseline, "eslit", "Exit Slit of Mono Vertical Gap"
+    )[0].item()
     motors["manipx"] = float(
         get_with_fallbacks(baseline, "manip_x", "Manipulator_x", default=[0])[0]
     )
