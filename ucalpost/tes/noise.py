@@ -18,24 +18,23 @@ def get_noise_and_projectors(run, c):
     return noise, projectors
 
 
-def plot_noise(noise, projectors, invert=True, savedir=None):
+def get_noise_data(noise, projectors, invert=True):
     data = load_mass(noise, projectors, invert=invert)
     prep_data(data)
-    fig, ax = plot_noise_from_data(data)
+    return data
+
+
+def plot_noise(data, savedir=None):
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    data.plot_noise(axis=ax, legend=False)
+
     if savedir is not None:
         if not os.path.exists(savedir):
             os.makedirs(savedir)
-        savename = "_".join(
-            basename(get_filename(noise)).split("_")[:-1] + ["noise.png"]
-        )
+        savename = "_".join(basename(data.filenames[0]).split("_")[:-1] + ["noise.png"])
         savefile = join(savedir, savename)
         fig.savefig(savefile)
-
-
-def plot_noise_from_data(data):
-    fig = plt.figure()
-    ax = fig.add_subplot()
-    data.plot_noise(ax=ax, legend=False)
     return (fig, ax)
 
 
