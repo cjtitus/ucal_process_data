@@ -5,7 +5,14 @@ import datetime
 import numpy as np
 
 
-# db = from_profile("ucal")
+def get_noise(run, catalog):
+    noise_uid = get_config_dict(run)["tes_noise_uid"]
+    return catalog[noise_uid]
+
+
+def get_projectors(run, catalog):
+    projectors_uid = get_config_dict(run)["tes_projector_uid"]
+    return catalog[projectors_uid]
 
 
 def get_config_dict(run):
@@ -98,6 +105,15 @@ def getRunFromStop(doc, catalog):
     run_uuid = doc["run_start"]
     run = catalog[run_uuid]
     return run
+
+
+def get_group(run):
+    if "group_name" in run.start:
+        return run.start["group_name"]
+    elif "group_md" in run.start:
+        return run.start["group_md"]["name"]
+    else:
+        return "None"
 
 
 def get_samplename(run):

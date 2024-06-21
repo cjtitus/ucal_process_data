@@ -1,39 +1,44 @@
 """
 A module to deal with fully-processed xastools-like spectra
 """
+
 from ..tools.catalog import WrappedCatalogBase
 from tiled.queries import Key
 from functools import reduce
 import datetime
 
+
 def subcatalog_input_transformer(arg):
     if arg is True:
         return {}
     elif arg is False or arg is None:
-        return {'subcatalogs': False}
+        return {"subcatalogs": False}
     else:
         return arg
 
 
 class WrappedAnalysis(WrappedCatalogBase):
-    KEY_MAP = {"samples": "scaninfo.sample", "groups": "scaninfo.group_md.name",
-               "edges": "scaninfo.element", "loadid": "scaninfo.loadid",
-               "scans": "scaninfo.scan"}
+    KEY_MAP = {
+        "samples": "scaninfo.sample",
+        "groups": "scaninfo.group_md.name",
+        "edges": "scaninfo.element",
+        "loadid": "scaninfo.loadid",
+        "scans": "scaninfo.scan",
+        "date": "scaninfo.date",
+    }
 
-    def get_subcatalogs(self, groups=True, samples=True, edges=True,
-                        subcatalogs=True):
+    def get_subcatalogs(self, groups=True, samples=True, edges=True, subcatalogs=True):
         """
         subcatalogs: bool. If False, don't get subcatalogs, but wrap the current catalog in a list,
         so that it can be treated as the output from get_subcatalogs
         """
         if subcatalogs:
-            return self._get_subcatalogs(groups=groups, samples=samples,
-                                         edges=edges)
+            return self._get_subcatalogs(groups=groups, samples=samples, edges=edges)
         else:
             return [self]
 
     def list_meta_key_vals(self, key):
-        keys = key.split('.')
+        keys = key.split(".")
         vals = set()
         for h in self._catalog.values():
             s = h.metadata
@@ -48,6 +53,11 @@ class WrappedAnalysis(WrappedCatalogBase):
     def filter(self, samples=None, groups=None, edges=None):
         return super().filter(samples=samples, groups=groups, edges=edges)
 
+    def filter_by_time(self, since, until):
+        return self.search(Key(self.KEY_MAP["date"]) > since).search(
+            Key(self.KEY_MAP["date"]) < until
+        )
+
     def get_beamtime(self, since, until=None):
         """
         since : iso formatted date string
@@ -58,12 +68,16 @@ class WrappedAnalysis(WrappedCatalogBase):
             defaultdelta = datetime.timedelta(days=1)
             untildatetime = startdate + defaultdelta
             until = untildatetime.isoformat()
-        beamtime_start_vals = self.search(Key("scaninfo.beamtime_start") > since).search(Key("scaninfo.beamtime_start") < until).list_meta_key_vals("scaninfo.beamtime_start")
+        beamtime_start_vals = (
+            self.search(Key("scaninfo.beamtime_start") > since)
+            .search(Key("scaninfo.beamtime_start") < until)
+            .list_meta_key_vals("scaninfo.beamtime_start")
+        )
         return self.filter_by_key("scaninfo.beamtime_start", beamtime_start_vals)
 
     def summarize(self):
         for h in self._catalog.values():
-            scaninfo = h.metadata['scaninfo']
+            scaninfo = h.metadata["scaninfo"]
             print(f"Date: {scaninfo['date']}")
             print(f"Scan: {scaninfo['scan']}")
             print(f"Group: {scaninfo['group_md']['name']}")
@@ -72,11 +86,11 @@ class WrappedAnalysis(WrappedCatalogBase):
     def describe(self):
         desc_dict = {}
         for h in self._catalog.values():
-            scaninfo = h.metadata['scaninfo']
-            scan = scaninfo['scan']
-            group = scaninfo['group_md']['name']
-            sample = scaninfo['sample']
-            edge = scaninfo['element']
+            scaninfo = h.metadata["scaninfo"]
+            scan = scaninfo["scan"]
+            group = scaninfo["group_md"]["name"]
+            sample = scaninfo["sample"]
+            edge = scaninfo["element"]
             if group not in desc_dict:
                 desc_dict[group] = {}
             group_dict = desc_dict[group]

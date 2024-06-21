@@ -1,6 +1,6 @@
 from ..tes.process_classes import scandata_from_run
 from xastools.utils import roiMaster, roiDefaults
-from .run import get_samplename, get_sampleid
+from .run import get_samplename, get_sampleid, get_group
 from tiled.queries import Key
 import datetime
 import numpy as np
@@ -59,6 +59,7 @@ def get_run_header(run):
     scaninfo = {}
     scaninfo["sample"] = get_samplename(run)
     scaninfo["loadid"] = get_sampleid(run)
+    scaninfo["group"] = get_group(run)
     scaninfo["scan"] = run.start["scan_id"]
     scaninfo["date"] = datetime.datetime.fromtimestamp(run.start["time"]).isoformat()
     scaninfo["command"] = get_with_fallbacks(
@@ -72,7 +73,6 @@ def get_run_header(run):
         "proposal",
         "cycle",
         "saf",
-        "group_md",
         "beamtime_uid",
         "beamtime_start",
         "repeat",
