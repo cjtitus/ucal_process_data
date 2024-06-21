@@ -1,33 +1,53 @@
 from ..databroker.run import get_noise, get_projectors, get_filename
 import mass
 import os
+from os.path import basename, join
 from . import mass_addons
 import matplotlib.pyplot as plt
 
 plt.ion()
 
 
-def plot_noise(data):
-    plt.figure()
-    data.plot_noise()
-    ax = plt.gca()
-    ax.get_legend().remove()
-
-
-def load_mass(projectors, c, invert=True):
+def get_noise_and_projectors(run, c):
+    scantype = run.start.get("scantype", "None")
+    if scantype == "projectors":
+        projectors = run
+    else:
+        projectors = get_projectors(run, c)
     noise = get_noise(projectors, c)
+    return noise, projectors
+
+
+def plot_noise(noise, projectors, invert=True, savedir=None):
+    data = load_mass(noise, projectors, invert=invert)
+    prep_data(data)
+    fig, ax = plot_noise_from_data(data)
+    if savedir is not None:
+        if not os.path.exists(savedir):
+            os.makedirs(savedir)
+        savename = "_".join(
+            basename(get_filename(noise)).split("_")[:-1] + ["noise.png"]
+        )
+        savefile = join(savedir, savename)
+        fig.savefig(savefile)
+
+
+def plot_noise_from_data(data):
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    data.plot_noise(ax=ax, legend=False)
+    return (fig, ax)
+
+
+def load_mass(noise, projectors, invert=True):
     scan_fname = get_filename(projectors).replace(".off", ".ljh")
     noise_fname = get_filename(noise).replace(".off", ".ljh")
 
     available_chans = set(mass.ljh_util.ljh_get_channels_both(noise_fname, scan_fname))
     pulse_files = mass.ljh_util.ljh_chan_names(scan_fname, available_chans)
     noise_files = mass.ljh_util.ljh_chan_names(noise_fname, available_chans)
-    pulse_h5name = "_".join(
-        os.path.basename(scan_fname).split("_")[:-1] + ["mass.hdf5"]
-    )
-    noise_h5name = "_".join(
-        os.path.basename(noise_fname).split("_")[:-1] + ["mass.hdf5"]
-    )
+    pulse_h5name = "_".join(basename(scan_fname).split("_")[:-1] + ["mass.hdf5"])
+    noise_h5name = "_".join(basename(noise_fname).split("_")[:-1] + ["mass.hdf5"])
     data = mass.TESGroup(
         filenames=pulse_files,
         noise_filenames=noise_files,
