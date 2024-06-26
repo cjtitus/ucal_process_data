@@ -208,7 +208,9 @@ def process_run(
 
 
 @merge_func(process_run, ["run", "loader", "cal"])
-def process_catalog(catalog, skip_bad_ADR=True, parent_catalog=None, **kwargs):
+def process_catalog(
+    catalog, skip_bad_ADR=True, skip_missing_ADR=False, parent_catalog=None, **kwargs
+):
     """
     Process a catalog of runs.
 
@@ -247,14 +249,18 @@ def process_catalog(catalog, skip_bad_ADR=True, parent_catalog=None, **kwargs):
         for run in ncat.values():
             print(f"Processing {run.start['scan_id']}")
             if skip_bad_ADR:
+                adr_threshold = 0.1
                 try:
                     last_adr_value = run.baseline["data"]["adr_heater"][1]
                 except (KeyError, AttributeError):
-                    print(
-                        f"run {run.start['scan_id']} has no ADR data in baseline, but ADR check was requested, not processing, moving on"
-                    )
-                    continue
-                if last_adr_value < 0.1:
+                    if skip_missing_ADR:
+                        print(
+                            f"run {run.start['scan_id']} has no ADR data in baseline, but ADR check was requested, not processing, moving on"
+                        )
+                        continue
+                    else:
+                        last_adr_value = adr_threshold + 1
+                if last_adr_value < adr_threshold:
                     print(
                         f"Last ADR magnet value for run {run.start['scan_id']} was {last_adr_value}, skipping"
                     )
