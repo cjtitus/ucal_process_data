@@ -248,6 +248,9 @@ def process_catalog(
             raise
         for run in ncat.values():
             print(f"Processing {run.start['scan_id']}")
+            if "tes" not in run.start.get("detectors", []):
+                print("TES not in detectors, skipping")
+                continue
             if skip_bad_ADR:
                 adr_threshold = 0.1
                 try:
