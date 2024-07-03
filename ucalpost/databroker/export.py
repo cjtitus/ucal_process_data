@@ -1,5 +1,6 @@
 from ..tes.process_classes import scandata_from_run
 from xastools.utils import roiMaster, roiDefaults
+from xastools.io import exportToYaml, exportToAthena, exportToSSRL
 from .run import get_samplename, get_sampleid, get_group
 from tiled.queries import Key
 import datetime
@@ -247,3 +248,28 @@ def export_run_to_analysis_catalog(
         sleep(1)
         new_uid = ANALYSIS_CATALOG.write_array(data, metadata=header, specs=["nistxas"])
     return new_uid
+
+
+def export_run_to_directory(
+    run,
+    folder,
+    infer_rois=True,
+    rois=[],
+    format="athena",
+    channels=None,
+    check_existing=True,
+):
+    data, header = get_data_and_header(
+        run, infer_rois=infer_rois, rois=rois, channels=channels
+    )
+    if format == "athena":
+        exportToAthena(folder, data, header)
+    elif format == "ssrl":
+        exportToSSRL(folder, data, header)
+    elif format == "yaml":
+        exportToYaml(folder, data, header)
+
+
+def export_catalog_to_directory(catalog, folder, format="athena", **kwargs):
+    for run in catalog.values():
+        export_run_to_directory(run, folder, format=format, **kwargs)
