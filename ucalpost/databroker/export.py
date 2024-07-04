@@ -258,16 +258,17 @@ def export_run_to_directory(
     format="athena",
     channels=None,
     check_existing=True,
+    **kwargs
 ):
     data, header = get_data_and_header(
         run, infer_rois=infer_rois, rois=rois, channels=channels
     )
     if format == "athena":
-        exportToAthena(folder, data, header)
+        exportToAthena(folder, data, header, **kwargs)
     elif format == "ssrl":
-        exportToSSRL(folder, data, header)
+        exportToSSRL(folder, data, header, **kwargs)
     elif format == "yaml":
-        exportToYaml(folder, data, header)
+        exportToYaml(folder, data, header, **kwargs)
 
 
 def export_catalog_to_directory(catalog, folder, format="athena", **kwargs):
