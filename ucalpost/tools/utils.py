@@ -4,6 +4,21 @@ from functools import update_wrapper
 from numpydoc.docscrape import NumpyDocString, Parameter
 import copy
 
+def get_with_fallbacks(thing, *possible_names, default=None):
+    for name in possible_names:
+        if isinstance(name, (list, tuple)):
+            for subname in name:
+                if subname in thing:
+                    thing = thing[subname]
+                    found_thing = True
+                else:
+                    found_thing = False
+            if found_thing:
+                return thing
+        elif name in thing:
+            return thing[name]
+    return default
+
 
 def iterfy(x):
     """

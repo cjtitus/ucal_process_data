@@ -27,7 +27,7 @@ def convert_names(name):
         "ucal_i400_ref": "REF",
         "ucal_i400_sc": "SC",
         "tes_tfy": "tfy",
-        "tes_mca_counts": "tfy"
+        "tes_mca_counts": "tfy",
         "ucal_i0up": "I0",
         "nexafs_i0up": "I0",
         "ucal_ref": "REF",
@@ -38,7 +38,7 @@ def convert_names(name):
         "nexafs_i1": "I1",
     }
     if "tes_mca_" in name:
-        name.replace("tes_mca_", "")
+        name = name.replace("tes_mca_", "")
     return name_conversions.get(name, name)
 
 

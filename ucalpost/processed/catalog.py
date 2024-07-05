@@ -3,6 +3,7 @@ A module to deal with fully-processed xastools-like spectra
 """
 
 from ..tools.catalog import WrappedCatalogBase
+from ..tools.utils import get_with_fallbacks
 from tiled.queries import Key
 from functools import reduce
 import datetime
