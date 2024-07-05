@@ -27,6 +27,7 @@ def convert_names(name):
         "ucal_i400_ref": "REF",
         "ucal_i400_sc": "SC",
         "tes_tfy": "tfy",
+        "tes_mca_counts": "tfy"
         "ucal_i0up": "I0",
         "nexafs_i0up": "I0",
         "ucal_ref": "REF",
@@ -36,6 +37,8 @@ def convert_names(name):
         "nexafs_ref": "REF",
         "nexafs_i1": "I1",
     }
+    if "tes_mca_" in name:
+        name.replace("tes_mca_", "")
     return name_conversions.get(name, name)
 
 
@@ -141,7 +144,7 @@ def get_run_data(run, exportArrayData=False):
     exposure = float(exposure)
     columns = []
     datadict = {}
-    known_array_keys = ["tes_mca_spectrum"]
+    known_array_keys = ["tes_mca_spectrum", "spectrum"]
     statistics_re = re.compile("_median$|_std$|_npts$|_sum$")
     keys = run.primary.data.keys()
     usekeys = []
