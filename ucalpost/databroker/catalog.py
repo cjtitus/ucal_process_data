@@ -11,7 +11,34 @@ from tiled.client import from_profile
 
 def getWDB(profile):
     db = from_profile(profile)
-    return WrappedDatabroker(db)
+    keyMap = {
+        "samples": "sample_name",
+        "groups": "group_name",
+        "edges": "edge",
+        "noise": "last_noise",
+        "scantype": "scantype",
+        "proposal": "proposal",
+        "uid": "uid",
+        "beamtime_start": "beamtime_start",
+    }
+    Wrapper = WrapperFactory(keyMap)
+    return Wrapper(db)
+
+
+def getOldWDB(profile):
+    db = from_profile(profile)
+    keyMap = {
+        "samples": "sample_args.sample_name.value",
+        "groups": "group_md.name",
+        "edges": "edge",
+        "noise": "last_noise",
+        "scantype": "scantype",
+        "proposal": "proposal",
+        "uid": "uid",
+        "beamtime_start": "beamtime_start",
+    }
+    Wrapper = WrapperFactory(keyMap)
+    return Wrapper(db)
 
 
 class WrappedDatabroker(WrappedCatalogBase):
@@ -256,15 +283,8 @@ class WrappedDatabroker(WrappedCatalogBase):
             print(f"TES processed: {is_run_processed(run)}")
 
 
-# wdb = WrappedDatabroker(db)
-class WrappedDatabrokerOld(WrappedDatabroker):
-    KEY_MAP = {
-        "samples": "sample_args.sample_name.value",
-        "groups": "group_md.name",
-        "edges": "edge",
-        "noise": "last_noise",
-        "scantype": "scantype",
-        "proposal": "proposal",
-        "uid": "uid",
-        "beamtime_start": "beamtime_start",
-    }
+def WrapperFactory(keyMap):
+    class CustomWrapper(WrappedDatabroker):
+        KEY_MAP = keyMap
+
+    return CustomWrapper

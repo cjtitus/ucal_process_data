@@ -1,17 +1,24 @@
-from xastools.io.exportXAS import exportXASToYaml, exportXASToSSRL
+from xastools.io.exportXAS import exportXASToYaml, exportXASToSSRL, exportXASToAthena
 import datetime
 from ..tools.utils import iterfy
 
 
 def xas_to_directory(xas):
-    date = datetime.datetime.fromtimestamp(xas.scaninfo['time'])
-    cycle = xas.scaninfo['cycle']
-    proposal = xas.scaninfo['proposal']
+    date = datetime.datetime.fromtimestamp(xas.scaninfo["time"])
+    cycle = xas.scaninfo["cycle"]
+    proposal = xas.scaninfo["proposal"]
     basepath = f"/nsls2/data/sst/legacy/ucal/proposals/{date.year}-{cycle}/pass-{proposal}/ucal/{date.year}{date.month:02d}{date.day:02d}_processed"
     return basepath
 
 
-def export_catalog_to_yaml(catalog, folder=None, namefmt=None, subcatalogs=True, individual=False, **export_kwargs):
+def export_catalog_to_yaml(
+    catalog,
+    folder=None,
+    namefmt=None,
+    subcatalogs=True,
+    individual=False,
+    **export_kwargs,
+):
     """
     norm : If present, a column to normalize by
     offsetMono : If True, shift mono
@@ -30,7 +37,14 @@ def export_catalog_to_yaml(catalog, folder=None, namefmt=None, subcatalogs=True,
         exportXASToYaml(xas, folder, namefmt=namefmt, **export_kwargs)
 
 
-def export_catalog_to_ssrl(catalog, folder=None, namefmt=None, subcatalogs=True, individual=False, **export_kwargs):
+def export_catalog_to_ssrl(
+    catalog,
+    folder=None,
+    namefmt=None,
+    subcatalogs=True,
+    individual=False,
+    **export_kwargs,
+):
     xaslist = catalog.get_xas(subcatalogs=subcatalogs, individual=individual)
 
     for xas in iterfy(xaslist):
@@ -42,3 +56,24 @@ def export_catalog_to_ssrl(catalog, folder=None, namefmt=None, subcatalogs=True,
             else:
                 namefmt = "{sample}_{element}_{scan}.dat"
         exportXASToSSRL(xas, folder, namefmt=namefmt, **export_kwargs)
+
+
+def export_catalog_to_athena(
+    catalog,
+    folder=None,
+    namefmt=None,
+    subcatalogs=True,
+    individual=False,
+    **export_kwargs,
+):
+    xaslist = catalog.get_xas(subcatalogs=subcatalogs, individual=individual)
+
+    for xas in iterfy(xaslist):
+        if folder is None:
+            folder = xas_to_directory(xas)
+        if namefmt is None:
+            if subcatalogs:
+                namefmt = "{sample}_{element}_coadded.dat"
+            else:
+                namefmt = "{sample}_{element}_{scan}.dat"
+        exportXASToAthena(xas, folder, namefmt=namefmt, **export_kwargs)

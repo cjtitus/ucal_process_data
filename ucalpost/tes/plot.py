@@ -57,7 +57,7 @@ def getScan2d(catalog, llim, ulim, eres=0.3, removeElastic=0, coadd=True):
             sd = scandata_from_run(run, logtype="run")
             z, x, y = sd.getScan2d(llim, ulim, eres=eres)
             if removeElastic > 0:
-                counts = maskElastic(x, y, counts, removeElastic)
+                z = maskElastic(x, y, z, removeElastic)
             counts.append(z)
     if coadd:
         counts = np.sum(counts, axis=0)
