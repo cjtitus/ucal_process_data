@@ -48,14 +48,14 @@ def plotScan1d(catalog, llim, ulim, removeElastic=0, normType=None):
     return x, counts
 
 
-def getScan2d(catalog, llim, ulim, eres=0.3, removeElastic=0, coadd=True):
+def getScan2d(catalog, llim, ulim, eres=0.3, removeElastic=0, coadd=True, **kwargs):
     x = 0
     y = 0
     counts = []
     for run in catalog.values():
         if is_run_processed(run):
             sd = scandata_from_run(run, logtype="run")
-            z, x, y = sd.getScan2d(llim, ulim, eres=eres)
+            z, x, y = sd.getScan2d(llim, ulim, eres=eres, **kwargs)
             if removeElastic > 0:
                 z = maskElastic(x, y, z, removeElastic)
             counts.append(z)
@@ -64,9 +64,9 @@ def getScan2d(catalog, llim, ulim, eres=0.3, removeElastic=0, coadd=True):
     return x, y, counts
 
 
-def plotScan2d(catalog, llim, ulim, removeElastic=0):
+def plotScan2d(catalog, llim, ulim, removeElastic=0, **kwargs):
     x, y, counts = getScan2d(
-        catalog, llim, ulim, removeElastic=removeElastic, coadd=True
+        catalog, llim, ulim, removeElastic=removeElastic, coadd=True, **kwargs
     )
     plt.contourf(x, y, counts, 50)
 

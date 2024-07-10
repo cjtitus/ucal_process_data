@@ -46,9 +46,9 @@ class ProcessedData:
         energies = self.select_between_times(start, stop, channels=channels)
         return np.sum((energies < ulim) & (energies > llim))
 
-    def histogram_between_times(self, start, stop, e_bins, channels=None):
+    def histogram_between_times(self, start, stop, e_bins, channels=None, offset=0):
         energies = self.select_between_times(start, stop, channels=channels)
-        ehist, _ = np.histogram(energies, e_bins)
+        ehist, _ = np.histogram(energies - offset, e_bins)
         return ehist
 
 
@@ -77,7 +77,7 @@ class ScanData:
             )
         return counts, self.log.motor_vals
 
-    def getScan2d(self, llim, ulim, eres=0.3, channels=None):
+    def getScan2d(self, llim, ulim, eres=0.3, channels=None, eloss=False):
         mono_list = self.log.motor_vals
         n_e_pts = int((ulim - llim) // eres)
         e_bins = np.linspace(llim, ulim, n_e_pts)
@@ -85,21 +85,29 @@ class ScanData:
 
         mono_grid, energy_grid = np.meshgrid(mono_list, e_centers)
         counts = np.zeros_like(mono_grid)
-        for n in range(len(mono_list)):
+        for n, m in enumerate(mono_list):
+            offset = m if eloss else 0
             counts[:, n] = self.data.histogram_between_times(
                 self.log.start_times[n],
                 self.log.stop_times[n],
                 e_bins,
                 channels=channels,
+                offset=offset,
             )
         return counts, mono_grid, energy_grid
 
-    def getEmission(self, llim, ulim, eres=0.3, strictTimebins=False, channels=None):
+    def getEmission(
+        self, llim, ulim, eres=0.3, strictTimebins=False, channels=None, **kwargs
+    ):
         n_e_pts = int((ulim - llim) // eres)
         e_bins = np.linspace(llim, ulim, n_e_pts)
         e_centers = (e_bins[1:] + e_bins[:-1]) / 2
         emission = self.data.histogram_between_times(
-            self.log.start_times[0], self.log.stop_times[-1], e_bins, channels=channels
+            self.log.start_times[0],
+            self.log.stop_times[-1],
+            e_bins,
+            channels=channels,
+            **kwargs,
         )
         return emission, e_centers
 
