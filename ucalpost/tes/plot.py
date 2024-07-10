@@ -19,7 +19,12 @@ def getScan1d(catalog, llim, ulim, removeElastic=0, coadd=True, divisor=None):
 
     if removeElastic > 0:
         x, y, counts = getScan2d(
-            catalog, llim, ulim, removeElastic=removeElastic, coadd=coadd
+            catalog,
+            llim,
+            ulim,
+            removeElastic=removeElastic,
+            coadd=coadd,
+            divisor=divisor,
         )
         counts = np.sum(counts, axis=-2)
         x = x[0, :]
@@ -65,10 +70,10 @@ def getScan2d(
             z, x, y = sd.getScan2d(llim, ulim, eres=eres, **kwargs)
             if removeElastic > 0:
                 z = maskElastic(x, y, z, removeElastic)
-                if divisor is not None:
-                    norm = run.primary.data[divisor].read()
-                else:
-                    norm = 1
+            if divisor is not None:
+                norm = run.primary.data[divisor].read()
+            else:
+                norm = 1
             counts.append(z / norm)
     if coadd:
         counts = np.sum(counts, axis=0)
