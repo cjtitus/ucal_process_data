@@ -16,6 +16,8 @@ import numpy as np
 Unfinished concept for a process catalog object that would replace loader/RawData/CalInfo
 
 Return to this later?
+
+Needed for compound calibration?
 """
 
 
@@ -180,7 +182,7 @@ def summarize_calibration(catalog, state, savedir=None):
 
 def get_cal_runs(noise_catalog):
     cal_list = []
-    for run in noise_catalog._catalog.values():
+    for run in noise_catalog.values():
         scantype = run.start.get("scantype", "data")
         if scantype == "calibration":
             cal_list.append(run)
@@ -189,7 +191,7 @@ def get_cal_runs(noise_catalog):
 
 def get_data_runs(noise_catalog):
     data_list = []
-    for run in noise_catalog._catalog.values():
+    for run in noise_catalog.values():
         scantype = run.start.get("scantype", "data")
         if scantype != "calibration":
             data_list.append(run)
@@ -198,7 +200,7 @@ def get_data_runs(noise_catalog):
 
 def get_savenames(noise_catalog):
     filenames = {}
-    for run in noise_catalog._catalog.values():
+    for run in noise_catalog.values():
         savename = get_analyzed_filename(run)
         state = get_tes_state(run)
         filenames[state] = savename

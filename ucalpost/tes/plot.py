@@ -8,7 +8,7 @@ from ucalpost.tes.process_classes import (
 )
 
 
-def getScan1d(catalog, llim, ulim, removeElastic=0, coadd=True):
+def getScan1d(catalog, llim, ulim, removeElastic=0, coadd=True, divisor=None):
     """
     Make sure everything in catalog has the same x-axis and length
 
@@ -16,6 +16,7 @@ def getScan1d(catalog, llim, ulim, removeElastic=0, coadd=True):
     """
     x = 0
     counts = []
+
     if removeElastic > 0:
         x, y, counts = getScan2d(
             catalog, llim, ulim, removeElastic=removeElastic, coadd=coadd
@@ -27,17 +28,21 @@ def getScan1d(catalog, llim, ulim, removeElastic=0, coadd=True):
             if is_run_processed(run):
                 sd = scandata_from_run(run, logtype="run")
                 y, x = sd.getScan1d(llim, ulim)
-                counts.append(y)
+                if divisor is not None:
+                    norm = run.primary.data[divisor].read()
+                else:
+                    norm = 1
+                counts.append(y / norm)
         if coadd:
             counts = np.sum(counts, axis=0)
     return x, counts
 
 
-def plotScan1d(catalog, llim, ulim, removeElastic=0, normType=None):
+def plotScan1d(catalog, llim, ulim, removeElastic=0, normType=None, **kwargs):
     fig = plt.figure()
     ax = fig.add_subplot()
 
-    x, counts = getScan1d(catalog, llim, ulim, removeElastic, coadd=True)
+    x, counts = getScan1d(catalog, llim, ulim, removeElastic, coadd=True, **kwargs)
     if normType == "tail":
         counts = tailNorm(counts)
     elif normType == "area":
@@ -48,7 +53,9 @@ def plotScan1d(catalog, llim, ulim, removeElastic=0, normType=None):
     return x, counts
 
 
-def getScan2d(catalog, llim, ulim, eres=0.3, removeElastic=0, coadd=True, **kwargs):
+def getScan2d(
+    catalog, llim, ulim, eres=0.3, removeElastic=0, coadd=True, divisor=None, **kwargs
+):
     x = 0
     y = 0
     counts = []
@@ -58,7 +65,11 @@ def getScan2d(catalog, llim, ulim, eres=0.3, removeElastic=0, coadd=True, **kwar
             z, x, y = sd.getScan2d(llim, ulim, eres=eres, **kwargs)
             if removeElastic > 0:
                 z = maskElastic(x, y, z, removeElastic)
-            counts.append(z)
+                if divisor is not None:
+                    norm = run.primary.data[divisor].read()
+                else:
+                    norm = 1
+            counts.append(z / norm)
     if coadd:
         counts = np.sum(counts, axis=0)
     return x, y, counts
