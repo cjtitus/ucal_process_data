@@ -110,6 +110,7 @@ def driftCorrect(catalog, states=None, redo=False):
 
 
 def getCalibrationSavefile(catalog, state):
+    run = catalog.run_dict[state]
     savedir = get_save_directory(run)
     savebase = "_".join(path.basename(catalog.off_filename).split("_")[:-1])
     savefile = path.join(savedir, f"{savebase}_{state}_cal.hdf5")

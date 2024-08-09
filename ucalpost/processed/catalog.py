@@ -81,7 +81,7 @@ class WrappedAnalysis(WrappedCatalogBase):
             scaninfo = h.metadata["scaninfo"]
             print(f"Date: {scaninfo['date']}")
             print(f"Scan: {scaninfo['scan']}")
-            print(f"Group: {scaninfo['group_md']['name']}")
+            print(f"Group: {scaninfo.get('group_md', {}).get('name', '')}")
             print(f"Sample: {scaninfo['sample']} Edge: {scaninfo['element']}")
 
     def describe(self):
@@ -89,7 +89,7 @@ class WrappedAnalysis(WrappedCatalogBase):
         for h in self._catalog.values():
             scaninfo = h.metadata["scaninfo"]
             scan = scaninfo["scan"]
-            group = scaninfo["group_md"]["name"]
+            group = scaninfo.get("group_md", {}).get("name", "")
             sample = scaninfo["sample"]
             edge = scaninfo["element"]
             if group not in desc_dict:
